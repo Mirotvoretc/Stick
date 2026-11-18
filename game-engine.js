@@ -210,9 +210,9 @@ class GameEngine {
           const gSource = Object.assign({},G,{bo:null});
           return {
             g:clone(gSource),mi:G.mi,ents:clone(ents),
-            P:clone(P.slice(-100)),IT:clone(IT.slice(-8)),PT:clone(PT.slice(-60)),
-            TX:clone(TX.slice(-24)),RG:clone(RG.slice(-16)),BM:clone(BM.slice(-12)),
-            ZP:clone(ZP.slice(-24)),TUR:clone(TUR),WALLS:clone(WALLS)
+            P:clone(P.slice(-64)),IT:clone(IT.slice(-6)),PT:clone(PT.slice(-28)),
+            TX:clone(TX.slice(-14)),RG:clone(RG.slice(-8)),BM:clone(BM.slice(-8)),
+            ZP:clone(ZP.slice(-12)),TUR:clone(TUR),WALLS:clone(WALLS)
           };
         },
         forceBossPhase(hpRatio,roll){

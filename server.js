@@ -14,7 +14,7 @@ const INDEX_FILE = ['index.html', 'stick_optimized.html', 'stick.html'].map(name
 const rooms = new Map()
 const clients = new WeakMap()
 const TICK_RATE = 60
-const SNAPSHOT_RATE = 20
+const SNAPSHOT_RATE = 15
 const TICK_MS = 1000 / TICK_RATE
 const SNAPSHOT_MS = 1000 / SNAPSHOT_RATE
 const NO_INPUT = Object.freeze({ l: false, r: false, j: false, d: false, s: false, m: false })
@@ -232,12 +232,12 @@ function broadcastState(room, force = false) {
   const peers = [room.host, ...room.guests.values()]
   for (const peer of peers) {
     if (!peer || peer.readyState !== WebSocket.OPEN) continue
-    if (!force && peer.bufferedAmount > 700 * 1024) continue
-    if (peer.bufferedAmount > 2 * 1024 * 1024) {
+    if (!force && peer.bufferedAmount > 1024 * 1024) {
       try { peer.close(1013, 'Client too slow') } catch (_) {}
       continue
     }
-    send(peer, packet, { force: true })
+    if (!force && peer.bufferedAmount > 96 * 1024) continue
+    send(peer, packet, force ? { force: true } : { limit: 96 * 1024 })
   }
 }
 
