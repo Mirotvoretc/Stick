@@ -69,7 +69,7 @@ const S={mode:'duel',rounds:3,maps:[0,4,5],p:[{c:0,ch:0,k:{l:'KeyA',r:'KeyD',j:'
 let NET={role:null,ws:null,conn:null,conns:[],slot:0,lastSend:0,lastInput:0,lastStateAt:0,stateAt:0,stateDuration:80,entitySeq:0,remote:{},ready:false,lastMi:-1,lobby:null,roomCode:null},M,G,ents=[],P=[],IT=[],PT=[],TX=[],RG=[],BM=[],ZP=[],TUR=[],WALLS=[],bgc,K={},TOUCH={l:0,r:0,j:0,d:0,s:0,m:0},rb=null,cur='menu',lt=0;
 const kn=c=>({ArrowLeft:'←',ArrowRight:'→',ArrowUp:'↑',ArrowDown:'↓',Space:'Пробел'})[c]||c.replace(/^(Key|Digit|Numpad)/,'');
 const tn=t=>G.mode=='solo'?(t==0?'ИГРОК':'БОТ'):G.mode=='duel'||G.mode=='v12'?'ИГРОК '+(t+1):'КОМАНДА '+(t+1);
-function fit(){const r=Math.max(.2,Math.min(innerWidth/W,innerHeight/H)*.97),d=Math.min(devicePixelRatio||1,(navigator.maxTouchPoints||0)>0?1.25:1.5);cv.style.width=W*r+'px';cv.style.height=H*r+'px';cv.width=W*r*d;cv.height=H*r*d;sc=r*d;if(M)mkbg()}
+function fit(){const r=Math.max(.2,Math.min(innerWidth/W,innerHeight/H)*.97),touch=(navigator.maxTouchPoints||0)>0||(typeof matchMedia==='function'&&matchMedia('(pointer: coarse)').matches),online=!!(NET&&NET.role),cap=touch?(online?1:1.25):1.5,d=Math.min(devicePixelRatio||1,cap);cv.style.width=W*r+'px';cv.style.height=H*r+'px';cv.width=Math.round(W*r*d);cv.height=Math.round(H*r*d);sc=r*d;if(M)mkbg()}
 let rt;addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{fit();syncTouchUi()},150)});
 function mkbg(){
  bgc=document.createElement('canvas');bgc.width=cv.width;bgc.height=cv.height;const c=bgc.getContext('2d');c.scale(sc,sc);
