@@ -13,7 +13,7 @@ function nextRound(){const m=G.mode,playerCount=G.demo?2:activePlayerCount(),has
   if(m=='v12'){pc(1,1,W*.86,-1);const a=S.swap|0;bt(a,a?W*.8:W*.2,a?-1:1,COL[S.p[a].c])}
   if(m=='v22'){pc(1,1,W*.86,-1);bt(0,W*.2,1,COL[S.p[0].c]);bt(1,W*.8,-1,COL[S.p[1].c])}
   if(m=='zomb'||m=='boss'){pc(1,0,hasThird?W*.5:W*.86,hasThird?1:-1);if(hasThird)pc(2,0,W*.86,-1)}
-  if(m=='boss'){const spec=BOSS_TYPES[(G.lv-1)%BOSS_TYPES.length],hpScale=1.38+Math.max(0,playerCount-2)*.22;G.bossSpec=spec;G.bo=add({B:1,btype:spec.id,bname:spec.n,tm:1,x:W*.84,y:GY,f:-1,c:spec.id=='electric'?'#63cfff':spec.id=='necromancer'?'#a24dff':spec.id=='colossus'?'#b18a5b':'#6845a8',hp:(spec.hp+G.lv*280)*hpScale,sz:spec.size});G.bn=spec.n.toUpperCase()} }
+  if(m=='boss'){const spec=BOSS_TYPES[(G.lv-1)%BOSS_TYPES.length],hpScale=1.38+Math.max(0,playerCount-2)*.22;G.bossSpec=spec;G.bo=add({B:1,btype:spec.id,bname:spec.n,tm:1,x:W*.84,y:GY,f:-1,c:spec.id=='electric'?'#63cfff':spec.id=='necromancer'?'#a24dff':spec.id=='colossus'?'#b18a5b':'#6845a8',hp:(spec.hp+G.lv*280)*hpScale*.85,sz:spec.size});G.bn=spec.n.toUpperCase()} }
  if(m=='zomb'){G.wv=0;nextWave()}startMapEvent()}
 function step(dt){G.sh=Math.max(0,G.sh-dt*40);
  for(const p of PT){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=(p.g??(p.r>5?0:600))*dt;p.l-=dt}PT=PT.filter(p=>p.l>0);if(PT.length>240)PT.splice(0,PT.length-240);
