@@ -1,12 +1,13 @@
 {
   "name": "stick-arena-authoritative",
-  "version": "2.0.0",
+  "version": "2.4.0",
   "private": true,
-  "description": "Server-authoritative multiplayer game server for Stick Arena",
+  "description": "Server-authoritative multiplayer arena game with upgraded vector combat visuals and phone-only touch controls",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "check": "node --check server.js && node --check game-engine.js"
+    "check": "node --check server.js && node --check game-engine.js && node --check js/core.js && node --check js/combat.js && node --check js/enemies.js && node --check js/render.js && node --check js/online.js && node --check tests/engine.test.js && node --check tests/visual.test.js && node --check tests/touch-ui.test.js",
+    "test": "node tests/engine.test.js && node tests/visual.test.js && node tests/touch-ui.test.js"
   },
   "engines": {
     "node": ">=18"

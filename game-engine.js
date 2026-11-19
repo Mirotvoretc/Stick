@@ -62,7 +62,7 @@ function safePlayer(p, index) {
 class GameEngine {
   constructor(htmlPath) {
     const html = fs.readFileSync(htmlPath, 'utf8')
-    const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)].map(m => { const srcMatch = m[1].match(/\bsrc=[\"']([^\"']+)[\"']/i); if (srcMatch) { const rel = srcMatch[1].replace(/^\//, ''); return fs.readFileSync(require('node:path').join(__dirname, rel), 'utf8') } return m[2] }).filter(s => s.trim())
+    const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)].map(m => { const srcMatch = m[1].match(/\bsrc=[\"']([^\"']+)[\"']/i); if (srcMatch) { const rel = srcMatch[1].replace(/^\//, '').split(/[?#]/, 1)[0]; return fs.readFileSync(require('node:path').join(__dirname, rel), 'utf8') } return m[2] }).filter(s => s.trim())
     if (scripts.length < 4) throw new Error('The game HTML must contain its three core gameplay scripts.')
 
     const mainCanvas = createCanvas()

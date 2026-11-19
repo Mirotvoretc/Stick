@@ -14,7 +14,7 @@ const INDEX_FILE = ['index.html', 'stick_optimized.html', 'stick.html'].map(name
 const rooms = new Map()
 const clients = new WeakMap()
 const TICK_RATE = 60
-const SNAPSHOT_RATE = 15
+const SNAPSHOT_RATE = 20
 const TICK_MS = 1000 / TICK_RATE
 const SNAPSHOT_MS = 1000 / SNAPSHOT_RATE
 const NO_INPUT = Object.freeze({ l: false, r: false, j: false, d: false, s: false, m: false })
@@ -96,7 +96,11 @@ function createRoom(ws) {
   const room = {
     code,
     host: ws,
+    hostToken: crypto.randomBytes(24).toString('base64url'),
+    hostTimer: null,
     guests: new Map(),
+    guestTokens: new Map(),
+    guestTimers: new Map(),
     playerConfigs: new Map([[0, { c: 0, ch: 0 }]]),
     settings: { mode: 'duel', maps: [0, 4, 5], rounds: 3, swap: 0 },
     inputs: new Map(),
@@ -112,15 +116,54 @@ function createRoom(ws) {
 
   rooms.set(code, room)
   clients.set(ws, { role: 'host', room, slot: 0, rateAt: Date.now(), rateCount: 0 })
-  send(ws, { type: 'created', code, slot: 0 })
+  send(ws, { type: 'created', code, slot: 0, token: room.hostToken, resumed: false, started: false })
   broadcastLobby(room)
 }
 
-function joinRoom(ws, requestedCode) {
+function joinRoom(ws, requestedCode, resumeToken = null) {
   const code = String(requestedCode || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
   const room = rooms.get(code)
-  if (!room || !room.host || room.host.readyState !== WebSocket.OPEN) {
-    send(ws, { type: 'error', message: 'Комната не найдена или хост отключился.' })
+  if (!room) {
+    send(ws, { type: 'error', message: 'Комната не найдена. Возможно, сервер перезапустился.' })
+    return
+  }
+
+  if (resumeToken) {
+    let resumeSlot = 0
+    for (const [slot, token] of room.guestTokens) {
+      if (token === resumeToken) {
+        resumeSlot = slot
+        break
+      }
+    }
+    if (!resumeSlot) {
+      send(ws, { type: 'error', message: 'Срок восстановления комнаты истёк. Создайте новую комнату.' })
+      return
+    }
+
+    const oldSocket = room.guests.get(resumeSlot)
+    if (oldSocket && oldSocket.readyState === WebSocket.OPEN && oldSocket !== ws) {
+      try { oldSocket.close(4001, 'Session resumed on another connection') } catch (_) {}
+    }
+
+    const timer = room.guestTimers.get(resumeSlot)
+    if (timer) clearTimeout(timer)
+    room.guestTimers.delete(resumeSlot)
+    room.guests.set(resumeSlot, ws)
+    room.inputs.set(resumeSlot, { input: Object.assign({}, NO_INPUT), at: Date.now() })
+    clients.set(ws, { role: 'guest', room, slot: resumeSlot, rateAt: Date.now(), rateCount: 0 })
+
+    const started = !!(room.started && room.engine && !room.engine.isEnded())
+    send(ws, { type: 'welcome', slot: resumeSlot, code: room.code, token: resumeToken, resumed: true, started })
+    if (started) send(ws, { type: 'start', resumed: true })
+    broadcastLobby(room)
+    if (started) broadcastStateTo(room, ws, true)
+    send(room.host, { type: 'peer-joined', slot: resumeSlot, resumed: true })
+    return
+  }
+
+  if (!room.host || room.host.readyState !== WebSocket.OPEN) {
+    send(ws, { type: 'error', message: 'Хост временно отключён. Подождите или попробуйте ещё раз.' })
     return
   }
   if (room.started && room.engine && !room.engine.isEnded()) {
@@ -130,7 +173,7 @@ function joinRoom(ws, requestedCode) {
 
   let slot = 0
   for (const candidate of [1, 2]) {
-    if (!room.guests.has(candidate)) {
+    if (!room.guestTokens.has(candidate)) {
       slot = candidate
       break
     }
@@ -140,12 +183,74 @@ function joinRoom(ws, requestedCode) {
     return
   }
 
+  const token = crypto.randomBytes(24).toString('base64url')
   room.guests.set(slot, ws)
+  room.guestTokens.set(slot, token)
   room.playerConfigs.set(slot, { c: slot, ch: 0 })
   room.inputs.set(slot, { input: Object.assign({}, NO_INPUT), at: Date.now() })
   clients.set(ws, { role: 'guest', room, slot, rateAt: Date.now(), rateCount: 0 })
-  send(ws, { type: 'welcome', slot, code: room.code })
+  send(ws, { type: 'welcome', slot, code: room.code, token, resumed: false, started: false })
   send(room.host, { type: 'peer-joined', slot })
+  broadcastLobby(room)
+}
+
+function resumeHost(ws, requestedCode, token) {
+  const code = String(requestedCode || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
+  const room = rooms.get(code)
+  if (!room || !token || room.hostToken !== token) {
+    send(ws, { type: 'error', message: 'Не удалось восстановить комнату. Создайте новую.' })
+    return
+  }
+
+  if (room.host && room.host.readyState === WebSocket.OPEN && room.host !== ws) {
+    try { room.host.close(4001, 'Host session resumed on another connection') } catch (_) {}
+  }
+  if (room.hostTimer) clearTimeout(room.hostTimer)
+  room.hostTimer = null
+  room.host = ws
+  clients.set(ws, { role: 'host', room, slot: 0, rateAt: Date.now(), rateCount: 0 })
+
+  const started = !!(room.started && room.engine && !room.engine.isEnded())
+  send(ws, { type: 'created', code: room.code, slot: 0, token: room.hostToken, resumed: true, started })
+  broadcastLobby(room)
+  if (started) {
+    send(ws, { type: 'start', resumed: true })
+    broadcastStateTo(room, ws, true)
+  }
+}
+
+function closeRoom(room, message = 'Комната закрыта.') {
+  if (!room) return
+  if (rooms.get(room.code) === room) rooms.delete(room.code)
+  if (room.hostTimer) clearTimeout(room.hostTimer)
+  for (const timer of room.guestTimers.values()) clearTimeout(timer)
+  room.guestTimers.clear()
+  const peers = [room.host, ...room.guests.values()]
+  for (const peer of peers) {
+    if (!peer || peer.readyState !== WebSocket.OPEN) continue
+    send(peer, { type: 'room-closed', message }, { force: true })
+    try { peer.close(1000, 'Room closed') } catch (_) {}
+  }
+  room.guests.clear()
+  room.engine = null
+}
+
+function expireGuest(room, slot) {
+  if (!room || room.guests.get(slot) !== null) return
+  room.guestTimers.delete(slot)
+  room.guests.delete(slot)
+  room.guestTokens.delete(slot)
+  room.playerConfigs.delete(slot)
+  room.inputs.delete(slot)
+  if (room.engine && !room.engine.isEnded()) {
+    try {
+      room.engine.disconnectPlayer(slot)
+      room.engine.setConnectedPlayers(connectedPlayers(room))
+    } catch (error) {
+      console.error('disconnect player', error)
+    }
+  }
+  send(room.host, { type: 'peer-left', slot })
   broadcastLobby(room)
 }
 
@@ -217,27 +322,44 @@ function startAuthoritativeMatch(room, config) {
   broadcastState(room, true)
 }
 
+function broadcastStateTo(room, target, force = false, packet = null) {
+  if (!room.engine || !target || target.readyState !== WebSocket.OPEN) return
+  let payload = packet
+  if (!payload) {
+    try {
+      payload = JSON.stringify({ type: 'state', state: room.engine.snapshot(), seq: room.snapshotSeq })
+    } catch (error) {
+      console.error('Snapshot serialization failed:', error)
+      return
+    }
+  }
+  if (!force && target.bufferedAmount > 512 * 1024) {
+    try { target.close(1013, 'Client too slow') } catch (_) {}
+    return
+  }
+  if (!force && target.bufferedAmount > 72 * 1024) return
+  send(target, payload, force ? { force: true } : { limit: 72 * 1024 })
+}
+
 function broadcastState(room, force = false) {
   if (!room.engine) return
   let packet
   try {
-    const payload = { type: 'state', state: room.engine.snapshot(), seq: ++room.snapshotSeq }
-    packet = JSON.stringify(payload)
+    packet = JSON.stringify({ type: 'state', state: room.engine.snapshot(), seq: ++room.snapshotSeq })
   } catch (error) {
     console.error('Snapshot serialization failed:', error)
     room.error = 'Не удалось собрать снимок состояния матча.'
     broadcast(room, { type: 'error', message: room.error })
     return
   }
-  const peers = [room.host, ...room.guests.values()]
-  for (const peer of peers) {
+  for (const peer of [room.host, ...room.guests.values()]) {
     if (!peer || peer.readyState !== WebSocket.OPEN) continue
-    if (!force && peer.bufferedAmount > 1024 * 1024) {
+    if (!force && peer.bufferedAmount > 512 * 1024) {
       try { peer.close(1013, 'Client too slow') } catch (_) {}
       continue
     }
-    if (!force && peer.bufferedAmount > 96 * 1024) continue
-    send(peer, packet, force ? { force: true } : { limit: 96 * 1024 })
+    if (!force && peer.bufferedAmount > 72 * 1024) continue
+    send(peer, packet, force ? { force: true } : { limit: 72 * 1024 })
   }
 }
 
@@ -262,7 +384,8 @@ function handleMessage(ws, raw) {
   const client = clients.get(ws)
   if (!client) {
     if (data.type === 'create') createRoom(ws)
-    else if (data.type === 'join') joinRoom(ws, data.code)
+    else if (data.type === 'join') joinRoom(ws, data.code, data.token || null)
+    else if (data.type === 'resume' && data.role === 'host') resumeHost(ws, data.code, data.token)
     else if (data.type === 'ping') send(ws, { type: 'pong' })
     else send(ws, { type: 'error', message: 'Сначала создай комнату или подключись к ней.' })
     return
@@ -300,25 +423,26 @@ function removeClient(ws) {
   const room = client.room
 
   if (client.role === 'host') {
-    if (rooms.get(room.code) === room) rooms.delete(room.code)
-    for (const guest of room.guests.values()) {
-      send(guest, { type: 'room-closed', message: 'Хост отключился. Комната закрыта.' }, { force: true })
-      try { guest.close(1000, 'Room closed') } catch (_) {}
-    }
-    room.guests.clear()
-    room.engine = null
+    if (room.host !== ws) return
+    room.host = null
+    if (room.hostTimer) clearTimeout(room.hostTimer)
+    broadcast(room, { type: 'host-disconnected', retryIn: 45 })
+    room.hostTimer = setTimeout(() => {
+      if (!room.host) closeRoom(room, 'Хост не вернулся. Комната закрыта.')
+    }, 45000)
+    room.hostTimer.unref?.()
     return
   }
 
-  if (room.guests.get(client.slot) === ws) room.guests.delete(client.slot)
-  room.inputs.delete(client.slot)
-  if (room.engine && !room.engine.isEnded()) {
-    try { room.engine.disconnectPlayer(client.slot) } catch (error) { console.error('disconnect player', error) }
-    room.engine.setConnectedPlayers(connectedPlayers(room))
-  }
-  if (room.playerConfigs.has(client.slot)) room.playerConfigs.delete(client.slot)
-  send(room.host, { type: 'peer-left', slot: client.slot })
-  broadcastLobby(room)
+  if (room.guests.get(client.slot) !== ws) return
+  room.guests.set(client.slot, null)
+  room.inputs.set(client.slot, { input: Object.assign({}, NO_INPUT), at: Date.now() })
+  const oldTimer = room.guestTimers.get(client.slot)
+  if (oldTimer) clearTimeout(oldTimer)
+  const timer = setTimeout(() => expireGuest(room, client.slot), 45000)
+  timer.unref?.()
+  room.guestTimers.set(client.slot, timer)
+  send(room.host, { type: 'peer-disconnected', slot: client.slot, retryIn: 45 })
 }
 
 const server = http.createServer((req, res) => {
@@ -399,7 +523,7 @@ setInterval(() => {
       const inputs = {}
       for (const player of connectedPlayers(room)) {
         const record = room.inputs.get(player.slot)
-        inputs[player.slot] = record && currentTime - record.at < 280 ? record.input : NO_INPUT
+        inputs[player.slot] = record && currentTime - record.at < 650 ? record.input : NO_INPUT
       }
       try {
         room.engine.setInputs(inputs)
