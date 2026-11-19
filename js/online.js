@@ -1,48 +1,103 @@
 function netStatus(t){const el=$('netStatus');if(el)el.textContent=t}
+function setNetNotice(message,visible=true){const el=$('netNotice');if(!el)return;el.textContent=message||'';el.classList.toggle('show',!!visible&&!!message)}
 function defaultServerUrl(){if(location.protocol!=='http:'&&location.protocol!=='https:')return '';const host=(location.hostname||'').toLowerCase();if(host.endsWith('github.io')||host.endsWith('githubusercontent.com'))return '';return location.origin}
 function loadServerUrl(){try{return localStorage.getItem('stickArenaServerUrl')||defaultServerUrl()}catch(e){return defaultServerUrl()}}
 function normalizeServerUrl(value){const u=new URL(value);if(u.protocol==='https:')u.protocol='wss:';else if(u.protocol==='http:')u.protocol='ws:';if(!['wss:','ws:'].includes(u.protocol))throw new Error('protocol');if(!u.pathname||u.pathname==='/')u.pathname='/ws';else if(!u.pathname.endsWith('/ws'))u.pathname=u.pathname.replace(/\/$/,'')+'/ws';if(location.protocol==='https:'&&u.protocol!=='wss:')throw new Error('secure');return u.href}
-function saveServerUrl(){const field=$('serverUrl'),value=field?field.value.trim():'';if(!value){lobbyStatus('Вставь HTTPS-адрес игрового сервера.');return}try{const address=normalizeServerUrl(value);localStorage.setItem('stickArenaServerUrl',address);if(field)field.value=address;lobbyStatus('Адрес сохранён.')}catch(e){lobbyStatus(e.message==='secure'?'На HTTPS-странице нужен защищённый адрес HTTPS/WSS.':'Некорректный адрес сервера. Вставь ссылку вида https://имя-сервера.onrender.com')}}
-function getServerUrl(){const field=$('serverUrl'),value=(field&&field.value.trim())||loadServerUrl();if(!value){lobbyStatus('Сначала вставь HTTPS-адрес сервера из Render.');return null}try{const address=normalizeServerUrl(value);try{localStorage.setItem('stickArenaServerUrl',address)}catch(e){}if(field)field.value=address;return address}catch(e){lobbyStatus(e.message==='secure'?'Для HTTPS-страницы нужен HTTPS/WSS-адрес.':'Адрес сервера некорректен. Проверь ссылку.');return null}}
-function testServer(){const url=getServerUrl();if(!url)return;let ws;try{ws=new WebSocket(url)}catch(e){lobbyStatus('Не удалось открыть соединение. Проверь адрес сервера.');return}lobbyStatus('Проверяем доступность сервера…');let finished=false;const timer=setTimeout(()=>{if(finished)return;finished=true;try{ws.close()}catch(e){}lobbyStatus('Сервер не ответил за 8 секунд. Проверь ссылку и хостинг.')},8000);ws.onopen=()=>{if(finished)return;finished=true;clearTimeout(timer);try{ws.close(1000,'Connection test')}catch(e){}lobbyStatus('Сервер доступен. Можно создавать комнату.')};ws.onerror=()=>{if(finished)return;finished=true;clearTimeout(timer);lobbyStatus('Не удалось подключиться. Сервер может быть выключен или адрес неверный.')};ws.onclose=()=>{if(!finished){finished=true;clearTimeout(timer);lobbyStatus('Сервер закрыл соединение до проверки. Проверь хостинг.')}}}
-function openOnline(){show('online');const field=$('serverUrl');if(field&&!field.value)field.value=loadServerUrl();netStatus(NET.ready?'Подключено к игровому серверу.':(field&&field.value?'Адрес сервера заполнен. Создай комнату или введи код.':'Вставь HTTPS-адрес Render — если игра открыта с того же сервера, адрес подставится автоматически.'))}
-function closeOnline(){if(NET.ws)disconnectOnline(false);show('menu')}
+function saveServerUrl(){const field=$('serverUrl'),value=field?field.value.trim():'';if(!value){lobbyStatus('Вставь HTTPS-адрес игрового сервера.');return}try{const address=normalizeServerUrl(value);localStorage.setItem('stickArenaServerUrl',address);if(field)field.value=address;lobbyStatus('Адрес сохранён.')}catch(e){lobbyStatus(e.message==='secure'?'На HTTPS-странице нужен защищённый адрес HTTPS/WSS.':'Некорректный адрес сервера. Вставь ссылку вида https://game.example.ru')}}
+function getServerUrl(){const field=$('serverUrl'),value=(field&&field.value.trim())||loadServerUrl();if(!value){lobbyStatus('Сначала вставь HTTPS-адрес сервера из хостинга.');return null}try{const address=normalizeServerUrl(value);try{localStorage.setItem('stickArenaServerUrl',address)}catch(e){}if(field)field.value=address;return address}catch(e){lobbyStatus(e.message==='secure'?'Для HTTPS-страницы нужен HTTPS/WSS-адрес.':'Адрес сервера некорректен. Проверь ссылку.');return null}}
+function testServer(){const url=getServerUrl();if(!url)return;let ws;try{ws=new WebSocket(url)}catch(e){lobbyStatus('Не удалось открыть соединение. Проверь адрес сервера.');return}lobbyStatus('Проверяем задержку до игрового сервера…');let finished=false,pingAt=0;const timer=setTimeout(()=>{if(finished)return;finished=true;try{ws.close()}catch(e){}lobbyStatus('Сервер не ответил за 8 секунд. Проверь адрес и доступность хостинга.')},8000);ws.onopen=()=>{if(finished)return;pingAt=performance.now();try{ws.send(JSON.stringify({type:'ping'}))}catch(e){finished=true;clearTimeout(timer);lobbyStatus('Не удалось отправить проверочный пакет.');try{ws.close()}catch(x){}}};ws.onmessage=event=>{if(finished)return;let data;try{data=JSON.parse(event.data)}catch(e){return}if(data.type!=='pong')return;finished=true;clearTimeout(timer);const elapsed=Math.round(performance.now()-pingAt);try{ws.close(1000,'Connection test')}catch(e){}lobbyStatus('Задержка до сервера: примерно '+elapsed+' мс (RTT). Это замер до сервера, а не гарантия такой же задержки в каждом матче.')};ws.onerror=()=>{if(finished)return;finished=true;clearTimeout(timer);lobbyStatus('Не удалось подключиться. Сервер может быть выключен или адрес неверный.')};ws.onclose=()=>{if(!finished){finished=true;clearTimeout(timer);lobbyStatus('Сервер закрыл соединение до проверки. Проверь хостинг.')}}}
+function openOnline(){show('online');const field=$('serverUrl');if(field&&!field.value)field.value=loadServerUrl();netStatus(NET.ready?'Подключено к игровому серверу.':(field&&field.value?'Адрес сервера заполнен. Создай комнату или введи код.':'Вставь HTTPS-адрес сервера. Если страница открыта с самого сервера, адрес подставится автоматически.'))}
+function closeOnline(){if(NET.ws||NET.role)disconnectOnline(false);show('menu')}
 function lobbyStatus(t){netStatus(t);const el=$('lobbyStatus');if(el)el.textContent=t;const c2=$('netCode2');if(c2&&$('netCode'))c2.textContent=$('netCode').textContent}
 function netSocketOpen(c){const ws=c&&(c.ws||c);return !!ws&&ws.readyState===WebSocket.OPEN}
-function sendNet(c,msg){const ws=c&&(c.ws||c)||NET.ws;if(!netSocketOpen(ws)||ws.bufferedAmount>90000)return false;try{ws.send(JSON.stringify(msg));return true}catch(e){return false}}
+function sendNet(c,msg){const ws=c&&(c.ws||c)||NET.ws;if(!netSocketOpen(ws)||ws.bufferedAmount>45000)return false;try{ws.send(JSON.stringify(msg));return true}catch(e){return false}}
 function sendHostBroadcast(msg){return sendNet(NET.ws,msg)}
 function lobbyPayload(){const players=[{slot:0,c:S.p[0].c,ch:S.p[0].ch}];(NET.conns||[]).forEach(c=>{const p=S.p[c.slot]||{};players.push({slot:c.slot,c:p.c||0,ch:p.ch||0})});return {type:'lobby',players,mode:S.mode,maps:S.maps,rounds:S.rounds,t3:false,swap:S.swap|0}}
 function sendLobby(){if(NET.role!=='host'||!NET.ready)return false;const msg=lobbyPayload();NET.lobby=msg;return sendNet(NET.ws,msg)}
-function sendConfig(){if(NET.role!=='guest'||!NET.ws||!NET.ready)return false;const s=NET.slot||1,p=S.p[s];if(!p)return false;return sendNet(NET.ws,{type:'config',c:p.c,ch:p.ch})}
+function sendConfig(){if(NET.role!=='guest'||!NET.ws||!NET.ready||NET.started)return false;const s=NET.slot||1,p=S.p[s];if(!p)return false;return sendNet(NET.ws,{type:'config',c:p.c,ch:p.ch})}
 function setPC(i,k,v){S.p[i][k]=v;sendConfig();rs()}
-function onGuestData(d){if(!d)return;if(d.type==='welcome'){NET.slot=d.slot||1;lobbyStatus('Вы — игрок '+(NET.slot+1)+'. Настройте персонажа.')}else if(d.type==='lobby'){const previousSuppress=NET.suppressLobby;NET.suppressLobby=true;NET.lobby=d;(d.players||[]).forEach(p=>{if(S.p[p.slot]&&p.slot!==(NET.slot||0)){S.p[p.slot].c=p.c;S.p[p.slot].ch=p.ch}});if(d.mode)S.mode=d.mode;if(d.maps&&d.maps.length)S.maps=d.maps;if(d.rounds)S.rounds=d.rounds;if(typeof d.swap!=='undefined')S.swap=d.swap|0;if(cur==='setup')rs();NET.suppressLobby=previousSuppress}else if(d.type==='start'){NET.started=true;show('');syncTouchUi()}else if(d.type==='state')applyNetState(d.state)}
-function currentStartConfig(){const lobby=lobbyPayload();return {mode:lobby.mode,maps:lobby.maps,rounds:lobby.rounds,swap:lobby.swap,players:lobby.players}}
-function handleServerMessage(d){if(!d||typeof d!=='object')return;if(d.type==='error'){lobbyStatus(d.message||'Ошибка игрового сервера.');return}if(d.type==='room-closed'){NET.ready=false;NET.conns=[];NET.remote={};NET.started=false;lobbyStatus(d.message||'Хост закрыл комнату.');show('online');return}
- if(d.type==='created'&&NET.role==='host'){NET.ready=true;NET.roomCode=d.code;$('netCode').textContent=d.code;lobbyStatus('Комната создана: '+d.code+'. Передай код друзьям.');show('setup');rs();return}
- if(d.type==='welcome'&&NET.role==='guest'){NET.ready=true;NET.slot=d.slot||1;NET.conn=NET.ws;NET.started=false;onGuestData({type:'welcome',slot:NET.slot});sendConfig();lobbyStatus('Подключено к комнате. Вы — игрок '+(NET.slot+1)+'.');show('setup');rs();return}
- if(d.type==='peer-joined'&&NET.role==='host'){if(!NET.conns.some(c=>c.slot===d.slot)){NET.conns.push({slot:d.slot,ws:NET.ws})}NET.conns.sort((a,b)=>a.slot-b.slot);sendLobby();lobbyStatus('Подключился игрок '+(d.slot+1)+'. Всего игроков: '+(NET.conns.length+1)+'/3.');if(cur==='online'){show('setup');rs()}return}
- if(d.type==='peer-left'&&NET.role==='host'){NET.conns=NET.conns.filter(c=>c.slot!==d.slot);delete NET.remote[d.slot];sendLobby();lobbyStatus('Игрок '+(d.slot+1)+' отключился.');if(cur==='setup')rs();return}
+function clearReconnectTimer(){if(NET.reconnectTimer){clearTimeout(NET.reconnectTimer);NET.reconnectTimer=null}}
+function onGuestData(d){if(!d)return;if(d.type==='welcome'){NET.slot=d.slot||1;lobbyStatus('Вы — игрок '+(NET.slot+1)+'. Настройте персонажа.')}else if(d.type==='lobby'){const previousSuppress=NET.suppressLobby;NET.suppressLobby=true;NET.lobby=d;(d.players||[]).forEach(p=>{if(S.p[p.slot]&&p.slot!==(NET.slot||0)){S.p[p.slot].c=p.c;S.p[p.slot].ch=p.ch}});if(d.mode)S.mode=d.mode;if(d.maps&&d.maps.length)S.maps=d.maps;if(d.rounds)S.rounds=d.rounds;if(typeof d.swap!=='undefined')S.swap=d.swap|0;if(cur==='setup')rs();NET.suppressLobby=previousSuppress}else if(d.type==='start'){NET.started=true;NET.sessionActive=true;NET.connectionLost=false;setNetNotice('',false);show('');syncTouchUi()}else if(d.type==='state')applyNetState(d.state,d.seq)}
+function handleServerMessage(d){if(!d||typeof d!=='object')return;
+ if(d.type==='error'){
+  lobbyStatus(d.message||'Ошибка игрового сервера.');
+  if(NET.connectionLost){clearReconnectTimer();NET.manualClose=true;NET.started=false;NET.sessionActive=false;NET.connectionLost=false;setNetNotice('',false);try{if(NET.ws&&NET.ws.readyState<2)NET.ws.close(4002,'Resume failed')}catch(e){}show('online')}
+  return
+ }
+ if(d.type==='room-closed'){
+  clearReconnectTimer();NET.roomClosed=true;NET.manualClose=true;NET.ready=false;NET.conns=[];NET.remote={};NET.started=false;NET.sessionActive=false;NET.connectionLost=false;setNetNotice('',false);lobbyStatus(d.message||'Хост закрыл комнату.');show('online');return
+ }
+ if(d.type==='host-disconnected'){
+  NET.hostUnavailable=true;setNetNotice('Хост временно потерял связь. Комната пытается восстановиться.',true);return
+ }
+ if(d.type==='created'&&NET.role==='host'){
+  clearReconnectTimer();NET.ready=true;NET.token=d.token||NET.token;NET.roomCode=d.code;NET.connectionLost=false;NET.hostUnavailable=false;NET.sessionActive=!!(d.started||NET.sessionActive);NET.started=!!d.started;NET.reconnectAttempts=0;NET.lastSeq=0;setNetNotice('',false);
+  if($('netCode'))$('netCode').textContent=d.code;
+  lobbyStatus(d.resumed?'Связь восстановлена. Комната снова доступна.':'Комната создана: '+d.code+'. Передай код друзьям.');
+  if(d.resumed&&d.started)show('');else{show('setup');rs()}
+  return
+ }
+ if(d.type==='welcome'&&NET.role==='guest'){
+  clearReconnectTimer();NET.ready=true;NET.slot=d.slot||1;NET.token=d.token||NET.token;NET.roomCode=d.code||NET.roomCode;NET.connectionLost=false;NET.hostUnavailable=false;NET.sessionActive=true;NET.started=!!d.started;NET.reconnectAttempts=0;NET.lastSeq=0;NET.conn=NET.ws;setNetNotice('',false);
+  onGuestData({type:'welcome',slot:NET.slot});
+  if(!NET.started)sendConfig();
+  lobbyStatus(d.resumed?'Связь восстановлена. Ты вернулся в матч.':'Подключено к комнате. Вы — игрок '+(NET.slot+1)+'.');
+  if(d.started)show('');else{show('setup');rs()}
+  syncTouchUi();return
+ }
+ if(d.type==='peer-joined'&&NET.role==='host'){
+  if(!NET.conns.some(c=>c.slot===d.slot))NET.conns.push({slot:d.slot,ws:NET.ws});
+  NET.conns.sort((a,b)=>a.slot-b.slot);sendLobby();lobbyStatus('Подключился игрок '+(d.slot+1)+'. Всего игроков: '+(NET.conns.length+1)+'/3.');if(cur==='online'){show('setup');rs()}return
+ }
+ if(d.type==='peer-left'&&NET.role==='host'){
+  NET.conns=NET.conns.filter(c=>c.slot!==d.slot);delete NET.remote[d.slot];sendLobby();lobbyStatus('Игрок '+(d.slot+1)+' отключился.');if(cur==='setup')rs();return
+ }
+ if(d.type==='peer-disconnected'){
+  lobbyStatus('Игрок '+(d.slot+1)+' потерял связь. Даём ему 45 секунд на возврат.');return
+ }
  if(d.type==='lobby'){onGuestData(d);return}
- if(d.type==='start'){NET.started=true;onGuestData(d);return}
- if(d.type==='state'){applyNetState(d.state);return}
+ if(d.type==='start'){NET.started=true;NET.sessionActive=true;NET.connectionLost=false;NET.hostUnavailable=false;onGuestData(d);return}
+ if(d.type==='state'){NET.connectionLost=false;NET.hostUnavailable=false;setNetNotice('',false);applyNetState(d.state,d.seq);return}
  if(d.type==='paused'){G.pause=!!d.paused;if(G.pause)show('pause');else if(cur==='pause')show('');return}
- if(d.type==='pong')return;
+ if(d.type==='pong')return
 }
-function connectGameServer(role,code){const url=getServerUrl();if(!url)return;disconnectOnline(false);NET.role=role;NET.roomCode=code||null;fit();let ws;try{ws=new WebSocket(url)}catch(e){lobbyStatus('Не удалось открыть WebSocket. Проверь адрес сервера.');return}NET.ws=ws;NET.conn=ws;NET.ready=false;lobbyStatus('Подключаемся к игровому серверу…');let opened=false;
- ws.onopen=()=>{if(NET.ws!==ws)return;opened=true;try{ws.send(JSON.stringify(role==='host'?{type:'create'}:{type:'join',code}))}catch(e){lobbyStatus('Не удалось отправить запрос серверу.');disconnectOnline();return}lobbyStatus(role==='host'?'Сервер доступен. Создаём комнату…':'Сервер доступен. Ищем комнату…')};
+function openGameSocket(resume=false){
+ if(!NET.role||NET.manualClose)return;
+ const wsUrl=NET.serverUrl||getServerUrl();if(!wsUrl)return;
+ let ws;try{ws=new WebSocket(wsUrl)}catch(e){lobbyStatus('Не удалось открыть WebSocket. Проверь адрес сервера.');return}
+ NET.ws=ws;NET.conn=ws;NET.ready=false;
+ ws.onopen=()=>{
+  if(NET.ws!==ws)return;
+  const message=resume&&NET.token?(NET.role==='host'?{type:'resume',role:'host',code:NET.roomCode,token:NET.token}:{type:'join',code:NET.roomCode,token:NET.token}):(NET.role==='host'?{type:'create'}:{type:'join',code:NET.roomCode});
+  try{ws.send(JSON.stringify(message))}catch(e){lobbyStatus('Не удалось отправить запрос серверу.');try{ws.close()}catch(x){}}
+  lobbyStatus(resume?'Повторное подключение…':(NET.role==='host'?'Подключаемся к серверу и создаём комнату…':'Подключаемся к серверу и ищем комнату…'))
+ };
  ws.onmessage=event=>{if(NET.ws!==ws)return;let data;try{data=JSON.parse(event.data)}catch(e){return}handleServerMessage(data)};
- ws.onerror=()=>{if(NET.ws===ws)lobbyStatus('Ошибка связи с игровым сервером. Проверь адрес и интернет.')};
- ws.onclose=()=>{if(NET.ws!==ws)return;NET.ready=false;NET.conns=[];NET.remote={};NET.started=false;if(opened)lobbyStatus('Соединение с игровым сервером потеряно. Подключись снова.');else lobbyStatus('Не удалось подключиться. Проверь, что сервер запущен.');if(cur==='setup')show('online')}
+ ws.onerror=()=>{if(NET.ws===ws)lobbyStatus('Проблема сетевого соединения. Пробуем восстановить связь…')};
+ ws.onclose=()=>{
+  if(NET.ws!==ws)return;
+  NET.ws=null;NET.conn=null;NET.ready=false;
+  if(NET.manualClose||NET.roomClosed)return;
+  if(NET.token&&NET.role&&(NET.sessionActive||NET.started||NET.stateAt>0)){
+   NET.connectionLost=true;setNetNotice('Связь потеряна. Восстанавливаем соединение…',true);syncTouchUi();
+   const delay=NET.reconnectAttempts<12?Math.min(8000,500*Math.pow(1.55,NET.reconnectAttempts)):15000;NET.reconnectAttempts=Math.min(12,NET.reconnectAttempts+1);clearReconnectTimer();NET.reconnectTimer=setTimeout(()=>openGameSocket(true),delay);if(NET.reconnectAttempts>=12)lobbyStatus('Связь ещё не восстановлена. Продолжаем попытки подключения…')
+  }else{
+   NET.conns=[];NET.remote={};NET.started=false;NET.sessionActive=false;setNetNotice('',false);
+   lobbyStatus('Соединение с сервером потеряно. Проверь ссылку и интернет.');if(cur==='setup')show('online')
+  }
+ }
 }
-function hostOnline(){const url=getServerUrl();if(!url)return;disconnectOnline(false);$('netCode').textContent='…';connectGameServer('host')}
+function connectGameServer(role,code){const url=getServerUrl();if(!url)return;disconnectOnline(false);NET.role=role;NET.roomCode=code||null;NET.serverUrl=url;NET.manualClose=false;NET.roomClosed=false;NET.connectionLost=false;NET.reconnectAttempts=0;fit();openGameSocket(false)}
+function hostOnline(){connectGameServer('host')}
 function joinOnline(){const code=((($('joinCode')&&$('joinCode').value.trim())||($('joinCode2')&&$('joinCode2').value.trim())||'').toUpperCase().replace(/[^A-Z0-9]/g,''));if(!code){lobbyStatus('Введите код комнаты.');return}if(code.length!==6){lobbyStatus('Код комнаты должен содержать 6 символов.');return}if(!getServerUrl())return;connectGameServer('guest',code)}
-function disconnectOnline(update=true){const ws=NET.ws;NET.ready=false;NET.ws=null;NET.conn=null;try{if(ws&&ws.readyState<2)ws.close(1000,'Client disconnect')}catch(e){}NET={role:null,ws:null,conn:null,conns:[],slot:0,lastSend:0,lastInput:0,lastStateAt:0,stateAt:0,stateDuration:95,entitySeq:0,remote:{},ready:false,lastMi:-1,lobby:null,roomCode:null,started:false};if(typeof fit==='function')fit();syncTouchUi();if(update)lobbyStatus('Отключено от игрового сервера.')}
-function applyNetState(d){if(!d||!d.g)return;const now=performance.now(),previous=new Map((ents||[]).map(e=>[e.nid,e]));G=Object.assign({},d.g);if(NET.lastMi!==d.mi){NET.lastMi=d.mi;M=MP[d.mi]||MP[0];mkbg()}else M=MP[d.mi]||M;ents=d.ents||[];for(const e of ents){const old=previous.get(e.nid);e.netFromX=old?(old.netTargetX??old.x):e.x;e.netFromY=old?(old.netTargetY??old.y):e.y;e.netTargetX=e.x;e.netTargetY=e.y}NET.stateDuration=NET.lastStateAt?cl(now-NET.lastStateAt,60,145):95;NET.lastStateAt=now;NET.stateAt=now;G.bo=ents.find(e=>e.B)||null;P=d.P||[];IT=d.IT||[];PT=d.PT||[];TX=d.TX||[];RG=d.RG||[];BM=d.BM||[];ZP=d.ZP||[];TUR=d.TUR||[];WALLS=d.WALLS||[];if(G.end&&!$('end').classList.contains('on'))endMatch();syncTouchUi()}
-function netTick(){if(!NET.ready||!NET.ws||NET.ws.readyState!==WebSocket.OPEN)return;const now=performance.now();if(now-NET.lastInput<33||NET.ws.bufferedAmount>50000)return;NET.lastInput=now;const slot=NET.role==='host'?0:(NET.slot||1),player=S.p[slot]||S.p[0],k=player.k;const input={l:!!(K[k.l]||TOUCH.l),r:!!(K[k.r]||TOUCH.r),j:!!(K[k.j]||TOUCH.j),d:!!(K[k.d]||TOUCH.d),s:!!(K[k.s]||TOUCH.s),m:!!(K[k.m]||TOUCH.m)};sendNet(NET.ws,{type:'input',input})}
+function disconnectOnline(update=true){const old=NET;old.manualClose=true;if(old.reconnectTimer)clearTimeout(old.reconnectTimer);old.ready=false;try{if(old.ws&&old.ws.readyState<2)old.ws.close(1000,'Client disconnect')}catch(e){}NET={role:null,ws:null,conn:null,conns:[],slot:0,lastSend:0,lastInput:0,lastStateAt:0,stateAt:0,stateDuration:55,entitySeq:0,remote:{},ready:false,lastMi:-1,lobby:null,roomCode:null,token:null,serverUrl:null,started:false,sessionActive:false,connectionLost:false,manualClose:false,roomClosed:false,reconnectTimer:null,reconnectAttempts:0,lastSeq:0};for(const a of Object.keys(TOUCH))TOUCH[a]=0;if(typeof fit==='function')fit();syncTouchUi();if(update)lobbyStatus('Отключено от игрового сервера.')}
+function applyNetState(d,seq=0){if(!d||!d.g)return;if(seq&&seq<=NET.lastSeq)return;if(seq)NET.lastSeq=seq;const now=performance.now(),previous=new Map((ents||[]).map(e=>[e.nid,e]));G=Object.assign({},d.g);if(NET.lastMi!==d.mi){NET.lastMi=d.mi;M=MP[d.mi]||MP[0];mkbg()}else M=MP[d.mi]||M;ents=d.ents||[];for(const e of ents){const old=previous.get(e.nid);e.netFromX=old?(old.netTargetX??old.x):e.x;e.netFromY=old?(old.netTargetY??old.y):e.y;e.netTargetX=e.x;e.netTargetY=e.y}NET.stateDuration=NET.lastStateAt?cl(now-NET.lastStateAt,40,110):50;NET.lastStateAt=now;NET.stateAt=now;NET.sessionActive=true;NET.started=true;G.bo=ents.find(e=>e.B)||null;P=d.P||[];IT=d.IT||[];PT=d.PT||[];TX=d.TX||[];RG=d.RG||[];BM=d.BM||[];ZP=d.ZP||[];TUR=d.TUR||[];WALLS=d.WALLS||[];if(G.end&&!$('end').classList.contains('on'))endMatch();syncTouchUi()}
+function netTick(){if(!NET.ready||!NET.ws||NET.ws.readyState!==WebSocket.OPEN)return;const now=performance.now();if(now-NET.lastInput<25||NET.ws.bufferedAmount>30000)return;NET.lastInput=now;const slot=NET.role==='host'?0:(NET.slot||1),player=S.p[slot]||S.p[0],k=player.k;const input={l:!!(K[k.l]||TOUCH.l),r:!!(K[k.r]||TOUCH.r),j:!!(K[k.j]||TOUCH.j),d:!!(K[k.d]||TOUCH.d),s:!!(K[k.s]||TOUCH.s),m:!!(K[k.m]||TOUCH.m)};sendNet(NET.ws,{type:'input',input})}
 
-let er=0;
+let er=0,lastDrawAt=0;
 function loop(t){requestAnimationFrame(loop);let dt=Math.min(.033,(t-lt)/1000||0);lt=t;
- try{if(NET.role){netTick()}else{if(G.hs>0){G.hs-=dt;dt=0}else if(G.slow>0){G.slow-=dt;dt*=.35}step(dt)}er=0}catch(x){console.error(x);if(++er>3){er=0;try{G.hs=0;G.slow=0;nextRound()}catch(y){startMatch(1)}}}
+ try{if(NET.role){netTick()}else{if(G.hs>0){G.hs-=dt;dt=0}else if(G.slow>0){G.slow-=dt;dt*=.35}step(dt)}}catch(x){console.error(x);if(++er>3){er=0;try{G.hs=0;G.slow=0;nextRound()}catch(y){startMatch(1)}}}
+ const drawInterval=phoneDevice?(NET.role?1000/30:1000/42):1000/60;if(t-lastDrawAt<drawInterval)return;lastDrawAt=t;
  try{draw()}catch(x){console.error(x);cv.width=cv.width;PT=[];TX=[];RG=[];BM=[]}}
 function show(id){cur=id;document.querySelectorAll('.sc').forEach(s=>s.classList.toggle('on',s.id==id));syncTouchUi()}
 function menu(){if(NET.role)disconnectOnline(false);show('menu');startMatch(1)}
@@ -74,14 +129,44 @@ function hlpOld(){const f=cur,kt=i=>ACT.map(a=>`<td>${kn(S.p[i].k[a[0]])}</td>`)
 addEventListener('keydown',e=>{if(rb){e.preventDefault();if(e.code!='Escape')S.p[rb[0]].k[rb[1]]=e.code;rb=null;cur=='help'?hlp():rs();return}
  if(!cur&&/^(Arrow|Space)/.test(e.code))e.preventDefault();K[e.code]=1;if(e.code=='Escape'&&(!cur||cur=='pause')&&!G.demo&&!G.end)pause()});
 addEventListener('keyup',e=>delete K[e.code]);addEventListener('blur',()=>{K={};for(const a of Object.keys(TOUCH))TOUCH[a]=0});
-const touchDevice=('ontouchstart' in window)||(navigator.maxTouchPoints||0)>0||(window.matchMedia&&window.matchMedia('(pointer: coarse)').matches);
-function syncTouchUi(){const onlinePlaying=!!(NET&&NET.role&&NET.started);const localPlaying=!!(!NET.role&&G&&!G.demo);const active=touchDevice&&!cur&&(onlinePlaying||localPlaying)&&!(G&&G.end)&&!(G&&G.pause);$('touchControls').classList.toggle('show',active);$('rotateHint').classList.toggle('show',active&&innerWidth<innerHeight)}
+function isPhoneDevice(){
+ const ua=String(navigator.userAgent||'');
+ const mobileAgent=!!(navigator.userAgentData&&navigator.userAgentData.mobile)||/iPhone|iPod|Android.*Mobile|Windows Phone|IEMobile|Opera Mini/i.test(ua);
+ const shortSide=Math.min(Number(screen.width)||innerWidth,Number(screen.height)||innerHeight);
+ const coarse=!!((window.matchMedia&&window.matchMedia('(any-pointer: coarse)').matches)||(navigator.maxTouchPoints||0)>0);
+ return mobileAgent&&coarse&&shortSide<=950;
+}
+let phoneDevice=false;
+function syncTouchUi(){
+ const phone=isPhoneDevice();
+ phoneDevice=phone;
+ document.documentElement.classList.toggle('phone-device',phone);
+ const onlinePlaying=!!(NET&&NET.role&&(NET.started||NET.stateAt>0)&&cur!=='pause'&&cur!=='end');
+ const localPlaying=!!(!NET.role&&G&&!G.demo&&!G.end&&!G.pause&&!cur);
+ const active=phone&&(onlinePlaying||localPlaying);
+ const controls=$('touchControls');
+ if(controls){
+  controls.classList.toggle('show',active);
+  controls.style.visibility=active?'visible':'hidden';
+  controls.style.opacity=active?'1':'0';
+  controls.setAttribute('aria-hidden',active?'false':'true');
+ }
+ const hint=$('rotateHint');
+ if(hint){
+  const showHint=active&&innerWidth<innerHeight;
+  hint.classList.toggle('show',showHint);
+  hint.style.display=showHint?'flex':'none';
+ }
+ if(NET&&NET.connectionLost&&active)setNetNotice('СВЯЗЬ ПОТЕРЯНА · ВОССТАНАВЛИВАЕМ ПОДКЛЮЧЕНИЕ',true);
+}
 const touchHeld=new Map();
 const joyBase=$('joyBase'),joyKnob=$('joyKnob');let joyPointer=null;
 function joyUpdate(e){const r=joyBase.getBoundingClientRect(),cx0=r.left+r.width/2,cy0=r.top+r.height/2,dx=e.clientX-cx0,dy=e.clientY-cy0,max=r.width*.34,d=Math.hypot(dx,dy),k=d>max?max/d:1,x=dx*k,y=dy*k;joyKnob.style.left=`calc(50% + ${x}px)`;joyKnob.style.top=`calc(50% + ${y}px)`;TOUCH.l=x<-max*.25?1:0;TOUCH.r=x>max*.25?1:0;TOUCH.d=y>max*.38?1:0}
-joyBase.addEventListener('pointerdown',e=>{e.preventDefault();joyPointer=e.pointerId;joyBase.setPointerCapture(e.pointerId);joyUpdate(e)});
+joyBase.addEventListener('pointerdown',e=>{e.preventDefault();joyPointer=e.pointerId;try{joyBase.setPointerCapture(e.pointerId)}catch(x){}joyUpdate(e)});
 joyBase.addEventListener('pointermove',e=>{if(e.pointerId===joyPointer)joyUpdate(e)});
 function joyRelease(e){if(e.pointerId!==joyPointer)return;joyPointer=null;for(const a of ['l','r','d'])TOUCH[a]=0;joyKnob.style.left='50%';joyKnob.style.top='50%'}
 joyBase.addEventListener('pointerup',joyRelease);joyBase.addEventListener('pointercancel',joyRelease);joyBase.addEventListener('lostpointercapture',joyRelease);
-for(const b of document.querySelectorAll('[data-act]')){const a=b.dataset.act;b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture(e.pointerId);touchHeld.set(e.pointerId,a);TOUCH[a]=1});const release=e=>{if(!touchHeld.has(e.pointerId))return;touchHeld.delete(e.pointerId);TOUCH[a]=[...touchHeld.values()].includes(a)?1:0};b.addEventListener('pointerup',release);b.addEventListener('pointercancel',release);b.addEventListener('lostpointercapture',release)}
-fit();startMatch(1);show('menu');requestAnimationFrame(loop);
+for(const b of document.querySelectorAll('[data-act]')){const a=b.dataset.act;b.addEventListener('pointerdown',e=>{e.preventDefault();try{b.setPointerCapture(e.pointerId)}catch(x){}touchHeld.set(e.pointerId,a);TOUCH[a]=1});const release=e=>{if(!touchHeld.has(e.pointerId))return;touchHeld.delete(e.pointerId);TOUCH[a]=[...touchHeld.values()].includes(a)?1:0};b.addEventListener('pointerup',release);b.addEventListener('pointercancel',release);b.addEventListener('lostpointercapture',release)}
+window.addEventListener('pointerup',e=>{if(touchHeld.has(e.pointerId)){const a=touchHeld.get(e.pointerId);touchHeld.delete(e.pointerId);TOUCH[a]=[...touchHeld.values()].includes(a)?1:0}joyRelease(e)},true);
+window.addEventListener('pointercancel',e=>{if(touchHeld.has(e.pointerId)){const a=touchHeld.get(e.pointerId);touchHeld.delete(e.pointerId);TOUCH[a]=[...touchHeld.values()].includes(a)?1:0}joyRelease(e)},true);
+const touchControlsElement=$('touchControls'),rotateHintElement=$('rotateHint'),netNoticeElement=$('netNotice');if(touchControlsElement)document.body.appendChild(touchControlsElement);if(rotateHintElement)document.body.appendChild(rotateHintElement);if(netNoticeElement)document.body.appendChild(netNoticeElement);addEventListener('orientationchange',()=>setTimeout(syncTouchUi,80));addEventListener('pageshow',syncTouchUi);addEventListener('resize',()=>setTimeout(syncTouchUi,120));if(window.matchMedia){const coarseQuery=matchMedia('(any-pointer: coarse)');coarseQuery.addEventListener?.('change',syncTouchUi)}fit();startMatch(1);show('menu');requestAnimationFrame(loop);
