@@ -1,13 +1,13 @@
 {
   "name": "stick-arena-authoritative",
-  "version": "2.4.1",
+  "version": "2.4.2",
   "private": true,
-  "description": "Server-authoritative multiplayer arena game with upgraded vector combat visuals and phone-only touch controls",
+  "description": "Stick Arena 2.4.2 with class balance updates, boss tuning, platform navigation fixes and GitHub Pages support",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "check": "node --check server.js && node --check game-engine.js && node --check js/core.js && node --check js/combat.js && node --check js/enemies.js && node --check js/render.js && node --check js/online.js && node --check tests/engine.test.js && node --check tests/visual.test.js && node --check tests/touch-ui.test.js && node --check tests/pages.test.js",
-    "test": "node tests/engine.test.js && node tests/visual.test.js && node tests/touch-ui.test.js && node tests/pages.test.js"
+    "check": "node --check server.js && node --check game-engine.js && node --check js/core.js && node --check js/combat.js && node --check js/enemies.js && node --check js/render.js && node --check js/online.js && node --check tests/engine.test.js && node --check tests/visual.test.js && node --check tests/touch-ui.test.js && node --check tests/pages.test.js && node --check tests/balance.test.js",
+    "test": "node tests/engine.test.js && node tests/visual.test.js && node tests/touch-ui.test.js && node tests/pages.test.js && node tests/balance.test.js"
   },
   "engines": {
     "node": ">=18"

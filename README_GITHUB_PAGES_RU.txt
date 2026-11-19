@@ -1,4 +1,4 @@
-STICK ARENA 2.4.1 — ПУБЛИКАЦИЯ НА GITHUB PAGES
+STICK ARENA 2.4.2 — ПУБЛИКАЦИЯ НА GITHUB PAGES
 
 ПОЧЕМУ РАНЬШЕ ПОЯВЛЯЛАСЬ «ГОЛАЯ» СТРАНИЦА
 
@@ -12,7 +12,7 @@ https://USERNAME.github.io/REPOSITORY/
 
 КАК ПРАВИЛЬНО ЗАГРУЗИТЬ ПРОЕКТ
 
-1. Скачай архив Stick-Arena-2.4.1-GitHub-Pages.zip и распакуй его.
+1. Скачай архив Stick-Arena-2.4.2-Balance-Update.zip и распакуй его.
 2. Открой получившуюся папку Stick-main.
 3. Зайди в свой репозиторий GitHub в браузере.
 4. Нажми Add file → Upload files.

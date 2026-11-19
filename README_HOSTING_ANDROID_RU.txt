@@ -1,4 +1,4 @@
-STICK ARENA 2.4 — ЗАПУСК ИГРОВОГО СЕРВЕРА С ANDROID
+STICK ARENA 2.4.2 — ЗАПУСК ИГРОВОГО СЕРВЕРА С ANDROID
 
 Главное: есть два разных сценария.
 
@@ -15,11 +15,11 @@ STICK ARENA 2.4 — ЗАПУСК ИГРОВОГО СЕРВЕРА С ANDROID
    pkg install nodejs-lts unzip -y
    termux-setup-storage
 
-3. Скачай архив Stick-main-2.4-android-host.zip и положи его в папку Download телефона.
+3. Скачай архив Stick-Arena-2.4.2-Balance-Update.zip и положи его в папку Download телефона.
 4. В Termux выполни:
 
    cd ~/storage/downloads
-   unzip Stick-main-2.4-android-host.zip
+   unzip Stick-Arena-2.4.2-Balance-Update.zip
    cd Stick-main
    npm install
    npm start
