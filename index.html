@@ -1,26 +1,28 @@
 <!DOCTYPE html>
 <html lang="ru"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>Stick Arena — бой начинается здесь</title>
+<meta name="theme-color" content="#0f1320"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
+<title>Stick Arena</title>
+<link href="https://fonts.googleapis.com/css2?family=Russo+One&family=Neucha&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head><body>
 
-
-<link rel="stylesheet" href="./css/styles.css?v=20261119-arena242-balance"></head><body>
-<div id="w"><canvas id="c"></canvas>
-<div id="touchControls" class="touch-controls" aria-label="Сенсорное управление">
- <div class="touch-pad"><div class="joy-base" id="joyBase"><div class="joy-ring"></div><div class="joy-knob" id="joyKnob"></div></div></div>
- <div class="touch-actions"><button class="touch-btn touch-jump" data-act="j">ПРЫЖОК</button><button class="touch-btn touch-skill" data-act="m">SKILL</button><button class="touch-btn touch-fire" data-act="s">УДАР</button></div>
- <button class="touch-pause" onclick="pause()">Ⅱ</button>
-</div>
-<div id="rotateHint" class="rotate-hint">ЛУЧШЕ ИГРАТЬ ГОРИЗОНТАЛЬНО · ДЖОЙСТИК СЛЕВА</div><div id="netNotice" class="net-notice" role="status" aria-live="polite"></div>
-<div class="sc" id="menu"><div class="box"><div class="menu-kicker"><span class="menu-kicker-dot"></span> ARCADE COMBAT · ONLINE ARENA</div><h1>STICK<br><span>ARENA</span></h1><p>Выбирай бой, собирай свою команду и выходи на арену. Сражайся с ботами или играй с друзьями.</p><div class="mn"><button class="bt big" onclick="show('setup');rs()">НАЧАТЬ ИГРУ <span aria-hidden="true">↗</span></button><button class="bt menu-help" onclick="hlp()">УПРАВЛЕНИЕ И ОРУЖИЕ</button></div><div class="menu-foot"><span>ОДИНОЧНАЯ ИГРА</span><i></i><span>СЕТЕВАЯ ИГРА ДО 3 ИГРОКОВ</span></div></div></div>
+<div id="w"><canvas id="c"></canvas><div id="tc"></div>
+<div class="sc" id="menu"><div class="box"><h1>STICK<br><span>ARENA</span></h1><p>Дуэли, боты, зомби-волны и боссы — вдвоём на одной клавиатуре</p><div class="mn"><button class="bt big" onclick="show('setup');rs()">PLAY</button><button class="bt" onclick="hlp()">Клавиши и оружие</button></div></div></div>
 <div class="sc" id="setup"><div class="box" id="sb"></div></div>
-<div class="sc" id="online"><div class="box"><h1 style="font-size:clamp(34px,7vw,58px)">ОНЛАЙН</h1><p>Подключение через отдельный игровой сервер. Точка доступа и ручной обмен сетевыми кодами не нужны.</p><div class="pn" style="display:block"><h3>Адрес игрового сервера</h3><p>Если игра открыта с адреса игрового сервера, он подставится автоматически. Если сайт и сервер размещены отдельно, укажи публичный HTTPS-адрес сервера. Физику матча рассчитывает сервер.</p><input id="serverUrl" autocomplete="url" spellcheck="false" placeholder="https://game.example.ru" class="server-address"><div class="row"><button class="bt" onclick="saveServerUrl()">СОХРАНИТЬ АДРЕС</button><button class="bt" onclick="testServer()">ПРОВЕРИТЬ ЗАДЕРЖКУ</button></div><small>Адрес сохраняется на телефоне. У всех игроков должен быть одинаковый адрес.</small></div><div class="pn" style="display:block;margin-top:16px"><h3>Создать комнату</h3><p>Вы станете хостом и будете управлять матчем. Отправьте друзьям код комнаты.</p><button class="bt big" onclick="hostOnline()">СОЗДАТЬ КОМНАТУ</button><div id="netCode" style="font-size:28px;font-weight:900;letter-spacing:3px;overflow-wrap:anywhere;margin-top:10px">—</div></div><div class="pn" style="display:block;margin-top:16px"><h3>Подключиться к комнате</h3><input id="joinCode" autocomplete="off" placeholder="6-значный код комнаты" maxlength="6" class="room-code-input"><button class="bt big" onclick="joinOnline()">ПОДКЛЮЧИТЬСЯ</button></div><p id="netStatus">Укажите адрес сервера, затем создайте комнату или введите код.</p><div class="bar"><button class="bt" onclick="closeOnline()">Назад</button><button class="bt" onclick="disconnectOnline()">Отключиться</button></div></div></div>
 <div class="sc" id="help"><div class="box" id="hb"></div></div>
 <div class="sc" id="end"><div class="box" style="text-align:center"><h1 id="et"></h1><p id="es"></p><div class="row" style="justify-content:center"><button class="bt big" onclick="play()">Ещё раз</button><button class="bt" onclick="menu()">В меню</button></div></div></div>
 <div class="sc" id="pause"><div class="box" style="text-align:center"><h1>ПАУЗА</h1><div class="row" style="justify-content:center"><button class="bt big" onclick="pause()">Продолжить</button><button class="bt" onclick="menu()">В меню</button></div></div></div>
-</div>
-<script src="./js/core.js?v=20261119-arena242-balance" defer></script>
-<script src="./js/combat.js?v=20261119-arena242-balance" defer></script>
-<script src="./js/enemies.js?v=20261119-arena242-balance" defer></script>
-<script src="./js/render.js?v=20261119-arena242-balance" defer></script>
-<script src="./js/online.js?v=20261119-arena242-balance" defer></script></body></html>
+<div id="rot">Поверните телефон горизонтально</div></div>
+<script src="js/01-config.js"></script>
+<script src="js/02-core.js"></script>
+<script src="js/03-world-events.js"></script>
+<script src="js/04-map-events.js"></script>
+<script src="js/05-weapons.js"></script>
+<script src="js/06-ai-bosses.js"></script>
+<script src="js/07-game-flow.js"></script>
+<script src="js/08-render.js"></script>
+<script src="js/09-ui-input.js"></script>
+<script src="js/10-slime.js"></script>
+<script src="js/99-init.js"></script>
+</body></html>
