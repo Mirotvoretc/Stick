@@ -20,15 +20,15 @@ const EVO_TREES12={
   {id:'duel_afterimage',name:'Ложный след',parent:'duel_technique',cost:3,desc:'Способность помечает до четырёх целей, но метки действуют 2,8 с.'}
  ]}
 };
-function evoDefaultProfile12(){return{players:Array.from({length:3},()=>({kills:0,progress:0,pts:0,trees:{engineer:[],duelist:[],medic:[],slime:[]}}))}}
-function evoLoadProfile12(){try{const raw=JSON.parse(localStorage.getItem(EVO_STORE_KEY12)||'null');const base=evoDefaultProfile12();if(raw&&Array.isArray(raw.players)){for(let i=0;i<3;i++){const p=raw.players[i]||{};base.players[i]={kills:Math.max(0,Number(p.kills)||0),progress:cl(Number(p.progress)||0,0,49),pts:Math.max(0,Number(p.pts)||0),trees:{engineer:Array.isArray(p.trees?.engineer)?p.trees.engineer:[],duelist:Array.isArray(p.trees?.duelist)?p.trees.duelist:[],medic:Array.isArray(p.trees?.medic)?p.trees.medic:[],slime:Array.isArray(p.trees?.slime)?p.trees.slime:[]}}}}return base}catch(e){return evoDefaultProfile12()}}
+function evoDefaultProfile12(){return{players:Array.from({length:3},()=>({kills:0,progress:0,pts:0,trees:{engineer:[],duelist:[],medic:[],slime:[],vampire:[]}}))}}
+function evoLoadProfile12(){try{const raw=JSON.parse(localStorage.getItem(EVO_STORE_KEY12)||'null');const base=evoDefaultProfile12();if(raw&&Array.isArray(raw.players)){for(let i=0;i<3;i++){const p=raw.players[i]||{};base.players[i]={kills:Math.max(0,Number(p.kills)||0),progress:cl(Number(p.progress)||0,0,49),pts:Math.max(0,Number(p.pts)||0),trees:{engineer:Array.isArray(p.trees?.engineer)?p.trees.engineer:[],duelist:Array.isArray(p.trees?.duelist)?p.trees.duelist:[],medic:Array.isArray(p.trees?.medic)?p.trees.medic:[],slime:Array.isArray(p.trees?.slime)?p.trees.slime:[],vampire:Array.isArray(p.trees?.vampire)?p.trees.vampire:[]}}}}return base}catch(e){return evoDefaultProfile12()}}
 let EVO_PROFILE12=evoLoadProfile12();
 function evoSaveProfile12(){try{localStorage.setItem(EVO_STORE_KEY12,JSON.stringify(EVO_PROFILE12))}catch(e){}}
 function evoSlot12(slot){return EVO_PROFILE12.players[cl(slot|0,0,2)]}
 function evoPoints12(slot){return evoSlot12(slot).pts}
 function evoKills12(slot){return evoSlot12(slot).kills}
 function evoProgress12(slot){return evoSlot12(slot).progress}
-function evoClassKey12(slot){const c=CH[S.p[slot]?.ch||0];return c?.engineer?'engineer':c?.duelist?'duelist':c?.med?'medic':c?.slime?'slime':null}
+function evoClassKey12(slot){const c=CH[S.p[slot]?.ch||0];return c?.engineer?'engineer':c?.duelist?'duelist':c?.med?'medic':c?.slime?'slime':c?.vamp?'vampire':null}
 function evoNodes12(slot,key){return evoSlot12(slot).trees[key]||[]}
 function evoHas12(slot,key,id){return evoNodes12(slot,key).includes(id)}
 function evoRecordKill12(source){if(!source||source.pi==null||source.pi<0||source.pi>2)return;const p=evoSlot12(source.pi);p.kills++;p.progress++;if(p.progress>=50){p.progress-=50;p.pts++;if(typeof TX!=='undefined')TX.push({x:source.x||W/2,y:(source.y||GY)-70,t:'+1 PTS · ЭВОЛЮЦИЯ',l:1.35,c:'#ffd166'});if(typeof fx==='function')fx(source.x||W/2,(source.y||GY)-55,12,'#ffd166',180)}evoSaveProfile12()}

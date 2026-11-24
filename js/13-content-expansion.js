@@ -14,11 +14,20 @@ const EVO_TREES12_EXTRA={
   {id:'slime_core',name:'Насыщенное ядро',parent:'slime_absorb',cost:3,desc:'Порог жертвенного возрождения снижается с ×3,5 до ×3,0; возрождение всё ещё возвращает 75% HP и обнуляет множитель.'},
   {id:'slime_stable',name:'Стабильная мимикрия',parent:'slime_mimic',cost:2,desc:'Каждое последующее копирование ослабляет копию на 0,03x вместо 0,05x.'},
   {id:'slime_fast',name:'Быстрая адаптация',parent:'slime_mimic',cost:3,desc:'Копирование оружия имеет 15% шанс сбоя, а дополнительные 5 секунд перезарядки способности сокращаются до 3.'}
+ ]},
+ vampire:{title:'Вампир',subtitle:'Два пути: насыщаться кровью в ближнем бою или совершенствовать форму летучей мыши. Сильная сторона одной ветки ослабляет другую.',nodes:[
+  {id:'vamp_feast',name:'Алый пир',type:'main',cost:2,desc:'Вампиризм повышается с 25% до 35%, но собственный урон снижается на 8%.'},
+  {id:'vamp_night',name:'Крылья ночи',type:'main',cost:2,desc:'Форма летучей мыши длится 4,2 с и становится быстрее, но вампиризм снижается до 20%, а перезарядка растёт до 22 с.'},
+  {id:'vamp_thirst',name:'Ненасытная жажда',parent:'vamp_feast',cost:2,desc:'Вампиризм повышается до 42%, но длительность формы летучей мыши сокращается до 2,5 с.'},
+  {id:'vamp_price',name:'Кровавая цена',parent:'vamp_feast',cost:3,desc:'Урон повышается на 12%, но вампиризм снижается до 28%.'},
+  {id:'vamp_longflight',name:'Бесконечный полёт',parent:'vamp_night',cost:2,desc:'Форма летучей мыши длится 5 с, но перезарядка увеличивается до 24 с.'},
+  {id:'vamp_swoop',name:'Алый пикирующий удар',parent:'vamp_night',cost:3,desc:'По окончании формы летучей мыши вампир наносит 35 урона ближайшим врагам в небольшом радиусе, но форма длится только 3,5 с.'}
  ]}
 };
 Object.assign(EVO_TREES12,EVO_TREES12_EXTRA);
-for(const p of EVO_PROFILE12.players){p.trees.medic=p.trees.medic||[];p.trees.slime=p.trees.slime||[]}
+for(const p of EVO_PROFILE12.players){p.trees.medic=p.trees.medic||[];p.trees.slime=p.trees.slime||[];p.trees.vampire=p.trees.vampire||[]}
 evoSaveProfile12();
+function evoVampireStats13(e){const slot=e&&CH[e.ch]?.vamp&&e.pi!=null?e.pi:-1,has=id=>slot>=0&&evoHas12(slot,'vampire',id);const s={lifesteal:.25,damage:1,batDuration:3,batCooldown:20,batMoveMul:.62,batBurst:0};if(has('vamp_feast')){s.lifesteal=.35;s.damage*=.92}if(has('vamp_thirst')){s.lifesteal=.42;s.batDuration=2.5}if(has('vamp_price')){s.lifesteal=.28;s.damage*=1.12}if(has('vamp_night')){s.lifesteal=.2;s.batDuration=4.2;s.batCooldown=22;s.batMoveMul=.78}if(has('vamp_longflight')){s.batDuration=5;s.batCooldown=24}if(has('vamp_swoop')){if(!has('vamp_longflight'))s.batDuration=3.5;s.batBurst=35}return s}
 
 function evoMedicStats13(e){const slot=e&&CH[e.ch]?.med&&e.pi!=null?e.pi:-1,has=id=>slot>=0&&evoHas12(slot,'medic',id);const s={regen:10,regenDelay:12,pack:.4,cooldown:12,damage:1,allyHeal:0,allyRadius:0,damageBuff:0,buffDuration:0,speedBuff:0,speedDuration:0};if(has('med_field')){s.regen=15;s.pack=.55;s.damage=.9}if(has('med_aura')){s.allyHeal=.12;s.allyRadius=180}if(has('med_emergency')&&e.hp/e.mh<.35){s.regen=22;s.pack=.6;s.cooldown=14}if(has('med_stim')){s.regen=8;s.pack=.32;s.damageBuff=1.2;s.buffDuration=6}if(has('med_adrenaline')){s.speedBuff=1.18;s.speedDuration=5}if(has('med_overdose')){s.pack=.25;s.damageBuff=1.35;s.buffDuration=8;s.cooldown=14}return s}
 function evoSlimeStats13(e){const slot=e&&CH[e.ch]?.slime&&e.pi!=null?e.pi:-1,has=id=>slot>=0&&evoHas12(slot,'slime',id);const s={heal:.10,normal:.03,heavy:.15,boss:.3,copyBase:1.3,copyDecay:.05,weaponFail:.3,cooldownExtra:5,reviveAt:3.5};if(has('slime_absorb')){s.heal=.15;s.normal=.05;s.heavy=.18;s.boss=.35}if(has('slime_feast')){s.heal=.18;s.boss=.4}if(has('slime_core'))s.reviveAt=3;if(has('slime_mimic')){s.heal=.08;s.normal=.025;s.heavy=.12;s.boss=.27;s.copyBase=1.4;s.weaponFail=.2}if(has('slime_stable'))s.copyDecay=.03;if(has('slime_fast')){s.weaponFail=.15;s.cooldownExtra=3}return s}
@@ -55,7 +64,7 @@ nextRound=function(){oldNextRoundContent13();G.devourer=null;G.devourerSouls=[]}
 const oldDrawEventContent13=drawEvent;
 drawEvent=function(){oldDrawEventContent13();if(G&&G.devourerSouls)for(const s of G.devourerSouls)if(isWorldVisible27(s.x,s.y,30,30))drawDevourerSoul13(s)};
 
-function killerCurrentZone13(e){return .075/Math.pow(1.5,Math.floor((e.killerStreak||0)/5))}
+function killerCurrentZone13(e){return (.075/1.2)/Math.pow(1.5,Math.floor((e.killerStreak||0)/5))}
 function killerFail13(e,message){e.killerAim=null;e.killerNeedRelease=true;e.killerStreak=0;e.kc=15;e.kcMax=15;e.fz=Math.max(e.fz||0,.3);e.vx*=.25;TX.push({x:e.x,y:e.y-e.h-20,t:message||'ПРОМАХ · ОГЛУШЕНИЕ',l:1.05,c:'#ff737d'});fx(e.x,e.y-e.h*.55,12,'#ff5368',210)}
 function killerStartAim13(e){const target=ents.filter(o=>o!==e&&o.hp>0&&o.tm!==e.tm&&!o.cl&&!(o.own===e)).sort((a,b)=>Math.hypot(a.x-e.x,a.y-e.y)-Math.hypot(b.x-e.x,b.y-e.y))[0];if(!target){killerFail13(e,'НЕТ ЦЕЛИ ДЛЯ ЗАХВАТА');return}e.killerAim={target,phase:R()*6.28,pos:.5,seed:R()*10,zone:killerCurrentZone13(e)};TX.push({x:target.x,y:target.y-target.h-34,t:'ЗАХВАТ · НАЖМИ ЕЩЁ РАЗ',l:.75,c:'#ff737d'});fx(target.x,target.y-target.h*.6,7,'#ff5368',140)}
 function killerResolveAim13(e){const a=e.killerAim,t=a&&a.target;if(!a||!t||t.hp<=0){killerFail13(e,'ЦЕЛЬ ПОТЕРЯНА');return}const zone=killerCurrentZone13(e);if(Math.abs(a.pos-.5)<=zone){const streak=e.killerStreak||0,damage=Math.min(5120,10*Math.pow(2,Math.min(9,streak)));e.killerStreak=streak+1;e.killerAim=null;e.kc=0;e.kcMax=15;hit(t,damage,e,Math.sign(t.x-e.x||e.f)*170,0,1);TX.push({x:t.x,y:t.y-t.h-22,t:'ТОЧНО · '+damage+' УРОНА · СЕРИЯ '+(streak+1),l:1.05,c:'#78ff9a'});fx(t.x,t.y-t.h*.55,16,'#77ff9a',250)}else killerFail13(e,'ПРОМАХ · СЕРИЯ СБРОШЕНА')}
