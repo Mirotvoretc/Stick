@@ -1,16 +1,17 @@
 CH.push({n:'Слизь',hp:325,sp:1,sz:1/1.2,dm:.65,slime:1,d:'325 HP, ×0.65 урона. Копирует недавно использованные способности и оружие. Открывается за 250 убийств зомби суммарно или за 15 убийств одной атакой.'});
 
 const SLIME_UNLOCK_KEY='stick-arena-slime-unlocks-v1';
+const SLIME_UNLOCK_KILLS=250;
 let SLIME_ATTACK_SEQ=0;
-function slimeLoadProgress(){try{const v=JSON.parse(localStorage.getItem(SLIME_UNLOCK_KEY)||'{}');return{players:Array.from({length:3},(_,i)=>!!(v.players&&v.players[i])),kills:Array.from({length:3},(_,i)=>Math.max(0,Math.min(250,Number(v.kills&&v.kills[i])||0)))}}catch(e){return{players:[false,false,false],kills:[0,0,0]}}}
+function slimeLoadProgress(){try{const v=JSON.parse(localStorage.getItem(SLIME_UNLOCK_KEY)||'{}');return{players:Array.from({length:3},(_,i)=>!!(v.players&&v.players[i])),kills:Array.from({length:3},(_,i)=>Math.max(0,Math.min(SLIME_UNLOCK_KILLS,Number(v.kills&&v.kills[i])||0)))}}catch(e){return{players:[false,false,false],kills:[0,0,0]}}}
 const SLIME_PROGRESS=slimeLoadProgress();
 let SLIME_UNLOCKS=SLIME_PROGRESS.players;
-let SLIME_KILLS=SLIME_PROGRESS.kills;for(let i=0;i<3;i++)if(SLIME_KILLS[i]>=250)SLIME_UNLOCKS[i]=true;
+let SLIME_KILLS=SLIME_PROGRESS.kills;for(let i=0;i<3;i++)if(SLIME_KILLS[i]>=SLIME_UNLOCK_KILLS)SLIME_UNLOCKS[i]=true;
 function slimeSaveUnlocks(){try{localStorage.setItem(SLIME_UNLOCK_KEY,JSON.stringify({players:SLIME_UNLOCKS,kills:SLIME_KILLS}))}catch(e){}}
 function slimeIsUnlocked(slot){return !!SLIME_UNLOCKS[slot|0]}
 function slimeUnlock(slot){slot=slot|0;if(slot<0||slot>2||SLIME_UNLOCKS[slot])return false;SLIME_UNLOCKS[slot]=true;slimeSaveUnlocks();return true}
 function slimeUnlockNotice(source){if(!source)return;TX.push({x:source.x,y:source.y-source.h-36,t:'НОВЫЙ КЛАСС: СЛИЗЬ!',l:2.4,c:'#55b9ff'});fx(source.x,source.y-source.h*.55,36,'#299dff',440)}
-function slimeRecordZombieKill(source){if(!source||source.pi==null)return;const slot=source.pi|0;if(slot<0||slot>2||SLIME_UNLOCKS[slot])return;SLIME_KILLS[slot]=Math.min(250,(SLIME_KILLS[slot]||0)+1);if(SLIME_KILLS[slot]>=250){if(slimeUnlock(slot))slimeUnlockNotice(source)}else slimeSaveUnlocks()}
+function slimeRecordZombieKill(source){if(!source||source.pi==null)return;const slot=source.pi|0;if(slot<0||slot>2||SLIME_UNLOCKS[slot])return;SLIME_KILLS[slot]=Math.min(SLIME_UNLOCK_KILLS,(SLIME_KILLS[slot]||0)+1);if(SLIME_KILLS[slot]>=SLIME_UNLOCK_KILLS){if(slimeUnlock(slot))slimeUnlockNotice(source)}else slimeSaveUnlocks()}
 function slimeNextAttackId(){return ++SLIME_ATTACK_SEQ}
 function slimeWeaponAmmo(e,weaponId){const w=WP[weaponId];if(!w)return 1e9;if(!CH[e.ch].slime||w.am>=1e8)return w.am;return Math.max(1,Math.floor(w.am/1.7))}
 function slimeAttackMultiplier(e){return Math.max(.1,((e.copyWeaponPower>0?e.copyWeaponPower:.65)+(e.slimeBonus||0))*.6)}
