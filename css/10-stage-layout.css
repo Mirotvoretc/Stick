@@ -1,0 +1,302 @@
+/* Stage, screen overlays, menu composition and information layout */
+#w {
+  position: relative;
+  display: grid;
+  width: 100%;
+  height: 100dvh;
+  min-height: 0;
+  place-items: center;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    radial-gradient(ellipse at 50% 44%, rgba(48, 76, 111, .28), transparent 53%),
+    radial-gradient(ellipse at 8% 90%, rgba(26, 69, 84, .18), transparent 30%),
+    linear-gradient(145deg, #0b1220 0%, #101a2a 55%, #0a111d 100%);
+}
+
+#w::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(181, 201, 226, .025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(181, 201, 226, .025) 1px, transparent 1px);
+  background-size: 40px 40px;
+  content: "";
+  pointer-events: none;
+}
+
+#w::after {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: radial-gradient(ellipse, transparent 45%, rgba(0, 0, 0, .32) 100%);
+  content: "";
+  pointer-events: none;
+}
+
+canvas {
+  display: block;
+  max-width: 100vw;
+  max-height: 100dvh;
+  border: 1px solid rgba(218, 230, 247, .16);
+  border-radius: 13px;
+  background: #0d1420;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, .6),
+    0 20px 65px rgba(0, 0, 0, .42),
+    0 0 40px rgba(66, 107, 151, .08);
+}
+
+.sc {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  display: none;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: max(15px, var(--safe-top)) max(15px, var(--safe-right)) max(18px, var(--safe-bottom)) max(15px, var(--safe-left));
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(90deg, transparent 0, transparent 31px, rgba(114, 151, 172, .09) 32px, transparent 33px),
+    linear-gradient(transparent 0, transparent 31px, rgba(114, 151, 172, .08) 32px, transparent 33px);
+  background-size: 32px 32px;
+  color: var(--ink);
+  font-family: var(--font-copy);
+  font-size: 19px;
+  line-height: 1.38;
+}
+
+.sc::before {
+  position: fixed;
+  z-index: 0;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(255, 255, 255, .24), transparent 16%, transparent 84%, rgba(66, 47, 23, .035));
+  content: "";
+  pointer-events: none;
+}
+
+.sc.on {
+  display: flex;
+  animation: screen-enter .2s var(--ease-out) both;
+}
+
+.sc .box {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 1040px);
+  margin: auto;
+  padding: 6px 4px 12px;
+}
+
+@keyframes screen-enter {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+#menu {
+  align-items: stretch;
+  background:
+    linear-gradient(90deg, rgba(5, 10, 18, .98) 0%, rgba(7, 14, 25, .92) 42%, rgba(7, 14, 25, .30) 100%),
+    radial-gradient(ellipse at 74% 48%, rgba(35, 113, 156, .23), transparent 45%),
+    linear-gradient(145deg, #0a111d, #17243a 64%, #0a101a);
+  color: #f5f3ed;
+  background-size: cover;
+}
+
+#menu::before {
+  background-image:
+    linear-gradient(120deg, transparent 0 62%, rgba(239, 183, 76, .045) 62.1% 62.3%, transparent 62.4%),
+    repeating-linear-gradient(0deg, transparent 0 47px, rgba(176, 201, 224, .045) 48px, transparent 49px);
+}
+
+#menu .box {
+  width: min(100%, 1050px);
+  margin: auto auto auto clamp(22px, 8vw, 125px);
+  padding: clamp(15px, 4vw, 44px) 0;
+}
+
+#menu h1 {
+  width: fit-content;
+  margin: 0 0 18px;
+  color: #f5f4ee;
+  font-size: clamp(52px, 10.5vw, 120px);
+  line-height: .88;
+  letter-spacing: -.015em;
+  text-align: left;
+  text-shadow:
+    4px 4px 0 #a73f4b,
+    8px 8px 0 rgba(0, 0, 0, .8),
+    0 18px 35px rgba(0, 0, 0, .25);
+  transform: rotate(-2deg);
+}
+
+#menu h1 span {
+  color: var(--gold-light);
+}
+
+#menu p {
+  max-width: 590px;
+  margin: 18px 0 0;
+  color: #d2dbe6;
+  font-size: clamp(17px, 2.2vw, 23px);
+  line-height: 1.32;
+  text-align: left;
+  text-wrap: pretty;
+}
+
+.mn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+#menu .mn .bt:not(.big) {
+  min-width: 210px;
+  background: rgba(230, 238, 247, .08);
+  border-color: rgba(227, 235, 245, .32);
+  color: #f0f3f8;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, .5);
+}
+
+#menu .mn .bt:not(.big):hover {
+  background: rgba(230, 238, 247, .15);
+}
+
+#menu .bt.big {
+  min-width: 240px;
+}
+
+.sc:not(#menu) h1 {
+  color: var(--ink);
+  text-shadow: 3px 3px 0 var(--gold-light);
+}
+
+.sc:not(#menu) .box > p {
+  color: var(--ink-soft);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px;
+}
+
+.pg {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.mg {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 17px;
+}
+
+.wg {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 13px;
+  align-items: stretch;
+}
+
+.bar {
+  position: sticky;
+  z-index: 2;
+  bottom: -18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 22px;
+  padding: 18px 0 8px;
+  background: linear-gradient(180deg, rgba(242, 236, 220, 0), rgba(242, 236, 220, .94) 33%, var(--paper) 100%);
+}
+
+.bar > span {
+  min-width: 0;
+}
+
+#end .box,
+#pause .box {
+  max-width: 780px;
+  text-align: center;
+}
+
+#end h1,
+#pause h1 {
+  margin-bottom: 18px;
+}
+
+#end p,
+#pause p {
+  font-size: 20px;
+}
+
+#help .box {
+  max-width: 1120px;
+}
+
+#setup .box {
+  max-width: 1180px;
+}
+
+#evo .box {
+  max-width: 1220px;
+}
+
+#help table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  border: 1px solid var(--paper-line);
+  border-radius: 11px;
+  background: rgba(255, 253, 246, .85);
+}
+
+#help td {
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(65, 60, 53, .11);
+  text-align: left;
+  vertical-align: top;
+}
+
+#help tr:last-child td {
+  border-bottom: 0;
+}
+
+#help tr:nth-child(even) td {
+  background: rgba(232, 224, 208, .28);
+}
+
+@media (max-width: 760px) {
+  .mg {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .pg {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .wg {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .sc .box {
+    padding-right: 1px;
+    padding-left: 1px;
+  }
+}

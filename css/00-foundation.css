@@ -1,0 +1,310 @@
+/* Stick Arena 2.9 — design foundation, typography and global behaviour */
+:root {
+  color-scheme: dark;
+  --night-0: #090e19;
+  --night-1: #101827;
+  --night-2: #182337;
+  --night-3: #223149;
+  --ink: #191d27;
+  --ink-soft: #343b49;
+  --paper: #f2ecdc;
+  --paper-light: #fffdf6;
+  --paper-mid: #e7dfcc;
+  --paper-line: #d3c9b4;
+  --muted: #716d67;
+  --muted-dark: #a7b0be;
+  --gold: #e7ac36;
+  --gold-light: #ffdb7b;
+  --coral: #e65b5b;
+  --mint: #3e9a78;
+  --sky: #498fbb;
+  --violet: #8066b7;
+  --danger: #b64448;
+  --success: #287654;
+  --line-dark: rgba(22, 29, 42, .16);
+  --line-light: rgba(255, 255, 255, .12);
+  --shadow-ink: 0 4px 0 rgba(25, 29, 39, .92);
+  --shadow-deep: 0 16px 42px rgba(0, 0, 0, .32);
+  --shadow-soft: 0 8px 22px rgba(22, 28, 39, .12);
+  --radius-xs: 7px;
+  --radius-sm: 10px;
+  --radius-md: 15px;
+  --radius-lg: 22px;
+  --ease-out: cubic-bezier(.2, .72, .25, 1);
+  --ease-pop: cubic-bezier(.2, .9, .25, 1.25);
+  --font-ui: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: "Russo One", Impact, "Arial Black", sans-serif;
+  --font-copy: Neucha, "Trebuchet MS", sans-serif;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  box-sizing: border-box;
+  padding-top: var(--safe-top);
+  padding-right: var(--safe-right);
+  padding-bottom: var(--safe-bottom);
+  padding-left: var(--safe-left);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
+}
+
+html {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  scroll-padding-top: var(--safe-top);
+  scrollbar-gutter: stable;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: var(--night-0);
+  color: #f2f4f8;
+  font: 15px/1.45 var(--font-ui);
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+body,
+button,
+input,
+select,
+textarea {
+  font-family: var(--font-ui);
+}
+
+button,
+input,
+select,
+textarea {
+  font-size: inherit;
+}
+
+button {
+  color: inherit;
+}
+
+button:focus {
+  outline: none;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid #347eb2;
+  outline-offset: 3px;
+}
+
+::selection {
+  color: var(--ink);
+  background: var(--gold-light);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(24, 35, 55, .08);
+  border-radius: 20px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(66, 76, 91, .35);
+  border: 2px solid transparent;
+  border-radius: 20px;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(66, 76, 91, .58);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+h1,
+h2,
+h3,
+h4,
+p {
+  margin-top: 0;
+}
+
+h1,
+h2,
+h3,
+h4,
+.bt,
+.ch,
+.evcost {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: .015em;
+}
+
+h1 {
+  margin-bottom: 12px;
+  color: var(--ink);
+  font-size: clamp(38px, 7vw, 74px);
+  line-height: .98;
+  text-align: center;
+  text-shadow: 3px 3px 0 var(--gold-light);
+}
+
+h1 span {
+  color: var(--coral);
+}
+
+h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 24px 0 11px;
+  color: var(--ink);
+  font-size: clamp(15px, 2vw, 18px);
+  line-height: 1.2;
+  letter-spacing: .025em;
+}
+
+h2 b {
+  display: inline-grid;
+  flex: 0 0 27px;
+  width: 27px;
+  height: 27px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-display);
+  font-size: 13px;
+}
+
+h2 small {
+  margin: 0;
+  color: var(--muted);
+  font-family: var(--font-copy);
+  font-size: .95em;
+}
+
+h3 {
+  margin: 0 0 7px;
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+p {
+  margin-bottom: 12px;
+}
+
+small {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-family: var(--font-copy);
+  font-size: 16px;
+  line-height: 1.3;
+}
+
+strong {
+  font-weight: 750;
+}
+
+img {
+  max-width: 100%;
+}
+
+button,
+select,
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+button {
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+
+input,
+select,
+textarea {
+  min-width: 0;
+}
+
+input[type="range"] {
+  height: 5px;
+  border-radius: 20px;
+  background: #c8c0b0;
+  accent-color: var(--gold);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: var(--gold-light);
+  box-shadow: 0 2px 0 var(--ink);
+  -webkit-appearance: none;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 15px;
+  height: 15px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: var(--gold-light);
+  box-shadow: 0 2px 0 var(--ink);
+}
+
+select {
+  min-height: 42px;
+  padding: 8px 38px 8px 12px;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-sm);
+  background-color: var(--paper-light);
+  color: var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+select option {
+  background: var(--paper-light);
+  color: var(--ink);
+}
+
+:where(.row, .mn, .pg, .mg, .wg, .evg) > * {
+  min-width: 0;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}

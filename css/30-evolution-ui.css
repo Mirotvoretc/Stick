@@ -1,0 +1,337 @@
+/* Evolution tree: clear tiers, costs, ownership and reset actions */
+.evo-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 18px;
+  margin: 0 0 8px;
+  padding: 13px 15px 11px;
+  border: 1px solid #cbbfa9;
+  border-radius: 15px 11px 15px 10px;
+  background:
+    linear-gradient(120deg, rgba(255, 255, 255, .9), rgba(249, 242, 226, .92)),
+    var(--paper-light);
+  box-shadow: 0 5px 14px rgba(37, 34, 28, .07), 3px 3px 0 var(--ink);
+}
+
+.evo-heading > div {
+  min-width: 0;
+}
+
+.evo-heading h1 {
+  margin: 3px 0 0;
+  font-size: clamp(34px, 6vw, 58px);
+  line-height: .95;
+  text-align: left;
+}
+
+.eyebrow {
+  display: inline-block;
+  color: #83765f;
+  font-family: var(--font-display);
+  font-size: 10px;
+  letter-spacing: .15em;
+}
+
+.evo-intro {
+  max-width: 980px;
+  margin: 13px 2px 16px;
+  color: #5f5b55;
+  font-size: 17px;
+  line-height: 1.35;
+}
+
+.evo-reset-all {
+  flex: 0 0 auto;
+  min-height: 38px;
+  border-color: #874247;
+  background: #fff2ee;
+  color: #79353b;
+  box-shadow: 2px 2px 0 #783a3c;
+  font-size: 11px;
+}
+
+.evo-reset-all:hover {
+  border-color: #713037;
+  background: #ffe1dc;
+  color: #642a31;
+  box-shadow: 3px 4px 0 #783a3c;
+}
+
+.evg {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(235px, 1fr));
+  align-items: stretch;
+  gap: 12px;
+  padding: 2px 2px 5px;
+}
+
+.evc {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 146px;
+  padding: 13px 14px 12px;
+  overflow: hidden;
+  border: 1.5px solid #c7bdab;
+  border-radius: 13px 10px 14px 9px;
+  background: linear-gradient(145deg, #fffdf8 0%, #f4eedf 100%);
+  color: var(--ink);
+  box-shadow: 0 4px 12px rgba(35, 33, 28, .07), 2px 2px 0 rgba(25, 29, 39, .82);
+  font-size: 15px;
+  line-height: 1.32;
+  transition:
+    transform .16s var(--ease-out),
+    box-shadow .16s ease,
+    border-color .16s ease,
+    opacity .16s ease,
+    filter .16s ease;
+}
+
+.evc::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 4px;
+  background: #9b9aa0;
+  content: "";
+}
+
+.evc:nth-child(3n + 1)::before {
+  background: linear-gradient(90deg, #4c91b6, #8ec4d7);
+}
+
+.evc:nth-child(3n + 2)::before {
+  background: linear-gradient(90deg, #b68a3a, #e8c26b);
+}
+
+.evc:nth-child(3n)::before {
+  background: linear-gradient(90deg, #8565ad, #c4a7dc);
+}
+
+.evc:hover {
+  z-index: 1;
+  border-color: #95886f;
+  box-shadow: 0 8px 18px rgba(35, 33, 28, .11), 3px 4px 0 rgba(25, 29, 39, .88);
+  transform: translateY(-2px);
+}
+
+.evc.own {
+  border-color: #3f9169;
+  background: linear-gradient(145deg, #f5fff6 0%, #e3f3e6 100%);
+  box-shadow: 0 0 0 2px rgba(62, 154, 120, .15), 0 4px 12px rgba(35, 33, 28, .08), 2px 2px 0 #2e6f54;
+}
+
+.evc.own::before {
+  height: 5px;
+  background: linear-gradient(90deg, #2d8b63, #8acb9b);
+}
+
+.evc.lock {
+  border-style: dashed;
+  background: linear-gradient(145deg, #eeece6 0%, #e3e0d7 100%);
+  opacity: .48;
+  filter: saturate(.48);
+}
+
+.evc.lock:hover {
+  transform: none;
+  box-shadow: 0 4px 12px rgba(35, 33, 28, .07), 2px 2px 0 rgba(25, 29, 39, .65);
+}
+
+.evh {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 26px;
+}
+
+.evh b {
+  max-width: 75%;
+  color: #252b36;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.25;
+}
+
+.evcost {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  min-height: 23px;
+  padding: 2px 8px;
+  border: 1px solid rgba(127, 91, 28, .24);
+  border-radius: 7px;
+  background: #f7d783;
+  color: #473319;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.evu,
+.evd {
+  margin: 8px 0 0;
+  font-family: var(--font-copy);
+  font-size: 16px;
+  line-height: 1.28;
+}
+
+.evu {
+  color: #266c50;
+}
+
+.evd {
+  color: #9c484b;
+}
+
+.evc button {
+  align-self: flex-start;
+  margin-top: auto;
+  padding-top: 6px;
+}
+
+.evc > small {
+  margin-top: auto;
+  padding-top: 9px;
+  color: #77736b;
+  font-size: 14px;
+}
+
+.evc.own .ch {
+  border-color: #3a785a;
+  background: #e4f5e8;
+  color: #285b43;
+  box-shadow: 2px 2px 0 #3a785a;
+}
+
+.evc.lock .evcost {
+  background: #d6d3ca;
+  color: #625e57;
+}
+
+.evbar {
+  position: relative;
+  flex: 1 1 260px;
+  min-width: 220px;
+  height: 28px;
+  overflow: hidden;
+  border: 1.5px solid #1b2029;
+  border-radius: 9px;
+  background: #29303a;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, .28), 2px 2px 0 rgba(25, 29, 39, .65);
+}
+
+.evbar i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  display: block;
+  min-width: 0;
+  background: linear-gradient(90deg, #bc8131 0%, #e8b84f 58%, #ffe08b 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .32), 2px 0 8px rgba(255, 214, 116, .22);
+  transition: width .35s var(--ease-out);
+}
+
+.evbar em {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+  color: #fff;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 650;
+  text-align: center;
+  text-shadow: 0 1px 3px #10141b, 0 0 6px #10141b;
+}
+
+#evo .row {
+  gap: 8px;
+}
+
+#evo .row + h2 {
+  margin-top: 18px;
+}
+
+#evo .row > .ch {
+  flex: 0 0 auto;
+}
+
+#evo .evo-heading + .evo-intro + .row {
+  margin: 12px 0 10px;
+  padding: 10px;
+  border: 1px solid rgba(80, 73, 60, .14);
+  border-radius: 12px;
+  background: rgba(255, 252, 242, .62);
+}
+
+#evo .evo-heading + .evo-intro + .row .ch.on {
+  outline: 2px solid rgba(222, 169, 61, .38);
+  outline-offset: 1px;
+}
+
+#evo .evg + h2 {
+  margin-top: 18px;
+}
+
+#evo .bar {
+  margin-top: 22px;
+}
+
+@media (max-width: 760px) {
+  .evo-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+  }
+  .evo-reset-all {
+    align-self: flex-start;
+  }
+  .evg {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+  }
+  .evc {
+    min-height: 155px;
+    padding: 11px 10px 10px;
+  }
+  .evh {
+    flex-direction: column;
+    gap: 6px;
+  }
+  .evh b {
+    max-width: 100%;
+    font-size: 12px;
+  }
+  .evcost {
+    min-height: 20px;
+  }
+  .evu,
+  .evd {
+    font-size: 15px;
+  }
+  .evbar {
+    flex-basis: 100%;
+    min-width: 100%;
+  }
+}
+
+@media (max-width: 380px) {
+  .evg {
+    grid-template-columns: 1fr;
+  }
+  .evc {
+    min-height: 0;
+  }
+  .evh {
+    flex-direction: row;
+  }
+}
