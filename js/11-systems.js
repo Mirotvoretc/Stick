@@ -28,14 +28,14 @@ function chainBolt(src,first,dm,aid,o){o=o||{};
  let ox=o.ox,oy=o.oy;if(ox==null){ox=src.x;oy=src.y-(src.h||40)*.6}
  const done=[first];let tgt=first,d=dm,bonus=0;
  for(let g=0;g<16&&tgt;g++){
-  const tx=tgt.x,ty=tgt.y-tgt.h*.5,hp0=tgt.hp;
+  const tx=tgt.x,ty=tgt.y-tgt.h*.5,hp0=tgt.hp;if(src&&src.isTur&&turretPlatformBlocks(ox,oy,tx,ty))break;
   ZP.push({x1:ox,y1:oy,x2:tx,y2:ty,life:g?.2:.26,c:g?'#d6fbff':col});
   hit(tgt,Math.max(1,Math.round(d)),src,(Math.sign(tx-ox)||1)*kx,0,0,aid);
   fx(tx,ty,g?6:12,col,240);left--;
   if(tgt.hp<=0&&hp0>0&&bonus<3){bonus++;left++}          // убил цель — молния бьёт ещё одну рядом
   if(left<=0)break;
   let nx=null,bd=range;
-  for(const q of ents){if(q.hp<=0||q.tm==tm||q.bat>0||done.includes(q))continue;const dd=Math.hypot(q.x-tx,q.y-q.h*.5-ty);if(dd<bd){bd=dd;nx=q}}
+  for(const q of ents){if(q.hp<=0||q.tm==tm||q.bat>0||done.includes(q))continue;if(src&&src.isTur&&turretPlatformBlocks(tx,ty,q.x,q.y-q.h*.5))continue;const dd=Math.hypot(q.x-tx,q.y-q.h*.5-ty);if(dd<bd){bd=dd;nx=q}}
   if(!nx)break;done.push(nx);ox=tx;oy=ty;tgt=nx;d*=fall}
  G.sh=Math.max(G.sh,5);return done.length}
 function teslaFire(e,dm,aid){
@@ -54,8 +54,10 @@ function blastArea(x,y,r,dm,src,tm,aid,kx,fzT){
  for(const w of WALLS)if(w.hp>0&&(tm==null||w.tm!=tm)&&Math.abs(w.x-x)<r+96&&y>w.y-r&&y<w.bottom+r)w.hp-=Math.max(1,Math.round(dm/22))}
 
 /* ---------- ТУРЕЛИ: прочность 100, враги атакуют, эволюция ---------- */
-function mkTurret(e,power,owner){const v=e.ev||{},mh=Math.round(100*(v.tHp||1));return{x:cl(e.x+e.f*48,28,W-28),y:e.y,tm:e.tm,hp:mh,mh,cd:.2,range:620*(v.tRange||1),dmg:17*(power||1)*(v.tDm||1),rate:v.tRate||1,decM:v.tDec||1,repA:v.tRep||0,evoAdj:v.tEvo||0,angle:e.f>0?0:Math.PI,c:owner?'#8ce5ff':e.c,src:e,isTur:1,kind:'g',kills:0,w:34,h:36,fl:0,ownerSlime:owner||null,born:G.t,rep:0}}
-function placeTurret(e,power,owner){for(const t of TUR)if(t.src===e&&t.hp>0)t.hp=0;TUR.push(mkTurret(e,power,owner))}   // у инженера только одна турель
+function turretSegmentHitsRect(x1,y1,x2,y2,left,top,right,bottom){const dx=x2-x1,dy=y2-y1;let lo=0,hi=1;const p=[-dx,dx,-dy,dy],q=[x1-left,right-x1,y1-top,bottom-y1];for(let i=0;i<4;i++){if(Math.abs(p[i])<1e-8){if(q[i]<0)return false;continue}const r=q[i]/p[i];if(p[i]<0){if(r>hi)return false;if(r>lo)lo=r}else{if(r<lo)return false;if(r<hi)hi=r}}return hi>=lo&&hi>.012&&lo<.988}
+function turretPlatformBlocks(x1,y1,x2,y2){if(!M)return false;for(const p of M.pl||[])if(turretSegmentHitsRect(x1,y1,x2,y2,p[0],p[1],p[0]+p[2],p[1]+17))return true;for(const p of DY.pl||[])if(p.solid!==false&&turretSegmentHitsRect(x1,y1,x2,y2,p.x,p.y,p.x+p.w,p.y+(p.h||17)))return true;return false}
+function mkTurret(e,power,owner){const v=e.ev||{},mh=Math.round(100*(v.tHp||1));return{x:cl(e.x+e.f*48,28,W-28),y:e.y,tm:e.tm,hp:mh,mh,cd:.32,range:Math.min(480,410*(v.tRange||1)),dmg:17*(power||1)*(v.tDm||1),rate:v.tRate||1,decM:v.tDec||1,repA:v.tRep||0,evoAdj:v.tEvo||0,angle:e.f>0?0:Math.PI,c:owner?'#8ce5ff':e.c,src:e,isTur:1,kind:'g',kills:0,w:34,h:36,fl:0,ownerSlime:owner||null,born:G.t,rep:0}}
+function placeTurret(e,power,owner){if(!e||!e.og||Math.abs(e.vy||0)>45)return false;for(const t of TUR)if(t.src===e&&t.hp>0)t.hp=0;TUR.push(mkTurret(e,power,owner));return true}   // одна турель, только на твёрдой поверхности
 function hitTur(t,d,s){if(t.hp<=0||d<=0)return;t.hp-=d;t.fl=.12;fx(t.x,t.y-18,4,'#cbd2df',150);if(R()<.6)TX.push({x:t.x+(R()-.5)*16,y:t.y-48,t:'-'+Math.round(d),l:.55,c:'#ffd0a0'})}
 function turretKill(t){if(!TUR.includes(t)||t.hp<=0)return;t.kills=(t.kills||0)+1;
  if(t.kills>30+(t.evoAdj||0)&&t.kind=='g'){t.kind=R()<.5?'e':'r';t.mh=130;t.hp=t.mh;fx(t.x,t.y-20,30,t.kind=='e'?'#63eaff':'#ffb347',380);RG.push({x:t.x,y:t.y-20,l:.4,big:1});G.sh=Math.max(G.sh,8);TX.push({x:t.x,y:t.y-60,t:t.kind=='e'?'ЭВОЛЮЦИЯ: ЭЛЕКТРО-ТУРЕЛЬ!':'ЭВОЛЮЦИЯ: РАКЕТНАЯ ТУРЕЛЬ!',l:1.6,c:t.kind=='e'?'#8feeff':'#ffc170'})}}
@@ -68,12 +70,12 @@ function updTurrets(dt){
   t.hp=Math.min(t.mh,t.hp+dl*dt);
   if(dl>0&&R()<dt*6)PT.push({x:t.x+(R()-.5)*28,y:t.y-12,vx:0,vy:-55,g:-30,l:.6,c:'#7ee08a',r:2.2});
   let target=null,best=t.range;
-  for(const o of ents){if(o.hp<=0||o.tm==t.tm||o.bat>0)continue;const d=Math.hypot(o.x-t.x,o.y-o.h*.55-(t.y-22));if(d<best){best=d;target=o}}
+  for(const o of ents){if(o.hp<=0||o.tm==t.tm||o.bat>0)continue;const ty=o.y-o.h*.55-(t.y-22),d=Math.hypot(o.x-t.x,ty);if(d<best&&!turretPlatformBlocks(t.x,t.y-22,o.x,o.y-o.h*.55)){best=d;target=o}}
   if(target){const dx=target.x-t.x,dy=target.y-target.h*.55-(t.y-22);t.angle=Math.atan2(dy,dx);
    if(t.cd<=0){const d=Math.max(1,Math.hypot(dx,dy)),mx=t.x+Math.cos(t.angle)*18,my=t.y-22+Math.sin(t.angle)*18,rt=t.rate||1;
-    if(t.kind=='e'){t.cd=.9/rt;chainBolt(t,target,t.dmg*.95,null,{ox:mx,oy:my,n:4,range:200,fall:.85})}
-    else if(t.kind=='r'){t.cd=1.7/rt;pr({x:mx,y:my,vx:dx/d*470,vy:dy/d*470,dm:t.dmg*1.6,tm:t.tm,t:'r',col:'#ffb347',src:t,life:3})}
-    else{t.cd=.42/rt;pr({x:mx,y:my,vx:dx/d*790,vy:dy/d*790,dm:t.dmg,tm:t.tm,t:'b',col:'#8ce5ff',life:1.35,src:t})}
+    if(t.kind=='e'){t.cd=1.15/rt;chainBolt(t,target,t.dmg*.95,null,{ox:mx,oy:my,n:4,range:175,fall:.85})}
+    else if(t.kind=='r'){t.cd=2.25/rt;pr({x:mx,y:my,vx:dx/d*360,vy:dy/d*360,dm:t.dmg*1.6,tm:t.tm,t:'r',col:'#ffb347',src:t,life:3.4,turretShot:1})}
+    else{t.cd=.62/rt;pr({x:mx,y:my,vx:dx/d*560,vy:dy/d*560,dm:t.dmg,tm:t.tm,t:'b',col:'#8ce5ff',life:1.35,src:t,turretShot:1})}
     fx(mx,my,5,t.kind=='e'?'#63eaff':t.kind=='r'?'#ffb347':'#8ce5ff',110)}}}
  TUR=TUR.filter(t=>{if(t.hp>0)return 1;fx(t.x,t.y-14,26,'#ffb347',300);fx(t.x,t.y-14,12,'#8ce5ff',200);RG.push({x:t.x,y:t.y-14,l:.3});TX.push({x:t.x,y:t.y-52,t:'ТУРЕЛЬ РАЗРУШЕНА',l:1,c:'#ff9a6a'});return 0})}
 

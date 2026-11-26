@@ -57,9 +57,53 @@ function drawAbsorberAura(e){const T=G.t,x=e.x,y=e.y-e.h*.5;cx.save();cx.globalC
 MP.push({n:'Небесная станция',g:['#040a22','#3f86ff'],h:'#14295e',d:'s',s:11,p:'#3b5078',t:'#9fe8ff',pl:[[40,540,150],[1090,540,150],[345,550,140],[795,550,140],[180,430,120],[980,430,120],[565,440,150],[40,320,110],[1130,320,110],[370,325,130],[780,325,130],[215,205,120],[945,205,120],[565,190,130]]});
 
 /* ---------- раскладка платформ на большую арену: по краям, сверху и без толпы в центре ---------- */
-function bigMap(m){const o=m.pl,tier=y=>y>=480?0:y>=380?1:y>=250?2:3,TY=[852,706,560,414],REF=[550,440,320,205];
- const a=o.map(p=>{const t=tier(p[1]),w=Math.round(p[2]*1.95),baseC=(p[0]+p[2]/2)*1.5,c=W/2+(baseC-W/2)*1.5;return{x:cl(Math.round(c-w/2),0,W-w),y:TY[t]+Math.round((p[1]-REF[t])*.1),w,t}});
- const mid=a.filter(p=>Math.abs(p.x+p.w/2-W/2)<170).sort((x,y)=>y.y-x.y);
- mid.slice(2).forEach((p,i)=>{const side=i%2?1:-1;p.x=cl(Math.round(W/2+side*(400+(i>>1)*80)-p.w/2),0,W-p.w)});
- for(let t=0;t<4;t++){const r=a.filter(p=>p.t==t).sort((x,y)=>x.x-y.x);for(let i=1;i<r.length;i++){const g=r[i].x-(r[i-1].x+r[i-1].w);if(g<50)r[i].x=Math.min(W-r[i].w,r[i-1].x+r[i-1].w+50)}}
- m.pl=a.map(p=>[p.x,p.y,p.w])}
+function bigMap(m){
+ const source=(m.pl||[]).map(p=>p.slice());
+ const tier=y=>y>=480?0:y>=380?1:y>=250?2:3;
+ const targetY=[852,706,560,414],refY=[550,440,320,205],rows=[[],[],[],[]];
+ for(const p of source){
+  const t=tier(p[1]),cx=cl(W/2+((p[0]+p[2]/2)-600)*1.5,88,W-88);
+  const w=cl(Math.round(p[2]*1.22),108,156),y=targetY[t]+Math.round((p[1]-refY[t])*.08);
+  rows[t].push({cx,y,w,t});
+ }
+ for(const row of rows){
+  row.sort((a,b)=>a.cx-b.cx);
+  let cursor=46;
+  for(const p of row){p.x=Math.max(Math.round(p.cx-p.w/2),cursor);cursor=p.x+p.w+54}
+  let right=row.length?row[row.length-1].x+row[row.length-1].w:0;
+  if(right>W-46){const shift=right-(W-46);for(const p of row)p.x-=shift}
+  if(row.length&&row[0].x<46){const shift=46-row[0].x;for(const p of row)p.x+=shift}
+ }
+ const platforms=rows.flat().map(p=>[Math.round(p.x),Math.round(p.y),p.w]);
+ const addStep=(cx,y,w=88)=>{
+  const offsets=[0,-92,92,-166,166,-238,238,-310,310];
+  for(const off of offsets){
+   const x=cl(Math.round(cx+off-w/2),42,W-42-w),center=x+w/2,yy=Math.round(y);
+   const blocked=platforms.some(p=>Math.abs(p[1]-yy)<32&&center-w/2<p[0]+p[2]+25&&center+w/2>p[0]-25);
+   if(blocked)continue;
+   platforms.push([x,yy,w]);
+   return true;
+  }
+  return false;
+ };
+ const bottom=rows[0].slice().sort((a,b)=>Math.abs(a.cx-W/2)-Math.abs(b.cx-W/2));
+ for(const p of bottom.slice(0,Math.min(2,bottom.length)))addStep(p.cx+(p.cx<W/2?68:-68),934,86);
+ if(!platforms.some(p=>Math.abs(p[1]-934)<28&&Math.abs(p[0]+p[2]/2-W/2)<150))addStep(W/2,934,86);
+ for(let t=0;t<3;t++){
+  const lower=rows[t],upper=rows[t+1];
+  if(!lower.length||!upper.length)continue;
+  for(const a of lower){
+   const b=upper.reduce((best,p)=>Math.abs(p.cx-a.cx)<Math.abs(best.cx-a.cx)?p:best,upper[0]);
+   const dx=b.cx-a.cx,dy=b.y-a.y;
+   const steps=Math.max(1,Math.ceil(Math.abs(dx)/190)-1,Math.ceil(Math.abs(dy)/96)-1);
+   for(let j=1;j<=steps;j++){
+    const f=j/(steps+1),x=a.cx+dx*f,y=a.y+dy*f;
+    addStep(x,y,82+(m.s%3)*4);
+   }
+  }
+  const centralA=lower.reduce((best,p)=>Math.abs(p.cx-W/2)<Math.abs(best.cx-W/2)?p:best,lower[0]);
+  const centralB=upper.reduce((best,p)=>Math.abs(p.cx-W/2)<Math.abs(best.cx-W/2)?p:best,upper[0]);
+  addStep((centralA.cx+centralB.cx)/2,(centralA.y+centralB.y)/2,92);
+ }
+ m.pl=platforms;
+}
