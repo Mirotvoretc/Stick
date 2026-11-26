@@ -1,2 +1,2 @@
-MP.forEach(bigMap);
+loadS();MP.forEach(bigMap);
 fit();tcBuild();if(IS_TOUCH){const mn=document.querySelector('#menu .mn');if(mn)mn.insertAdjacentHTML('beforeend','<button class="bt" onclick="show(\'setup\');rs();tcEdit(1)">Настроить сенсор</button><button class="bt" onclick="goFull()">Полный экран</button>')}addEventListener('orientationchange',()=>setTimeout(fit,250));if(window.visualViewport)visualViewport.addEventListener('resize',()=>setTimeout(fit,120));startMatch(1);show('menu');requestAnimationFrame(loop);
